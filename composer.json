@@ -1,11 +1,11 @@
 {
-  "name": "systopia/de.systopia.assumedpayments",
-  "description": "FIXME",
+  "name": "systopia/de.systopia.assumed-payments",
+  "description": "CiviCRM extension to automatically create `assumed payments` for recurring contributions where payments are missing or still open within a defined date range. ",
   "type": "civicrm-ext",
   "license": "AGPL-3.0-or-later",
   "authors": [
     {
-      "name": "SYSTOPIA GmbH",
+      "name": "SYSTOPIA",
       "email": "info@systopia.de",
       "homepage": "https://www.systopia.de"
     }
@@ -19,8 +19,8 @@
     }
   },
   "require": {
-    "php": "^8.1",
-    "civicrm/civicrm-core": "*",
+    "php": "^8.2",
+    "civicrm/civicrm-core": ">=6.8",
     "civicrm/civicrm-packages": ">=6.8"
   },
   "autoload": {
@@ -41,7 +41,15 @@
     "composer-phpunit": [
       "@composer --working-dir=tools/phpunit"
     ],
+    "composer-rector": [
+      "@composer --working-dir=tools/rector"
+    ],
+    "composer-cs-fixer": [
+      "@composer --working-dir=tools/php-cs-fixer"
+    ],
     "composer-tools": [
+      "@composer-cs-fixer",
+      "@composer-rector",
       "@composer-phpcs",
       "@composer-phpstan",
       "@composer-phpunit"
@@ -61,23 +69,32 @@
     "phpunit:html": [
       "@php tools/phpunit/vendor/bin/simple-phpunit --coverage-html /var/www/html/coverage"
     ],
+    "rector": [
+      "@php tools/rector/vendor/bin/rector process"
+    ],
+    "rector:test": [
+      "@php tools/rector/vendor/bin/rector process --dry-run"
+    ],
+    "cs-fixer": [
+      "@php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --config=php-cs-fixer.php"
+    ],
+    "cs-fixer:test": [
+      "@php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --dry-run --diff --config=php-cs-fixer.php"
+    ],
+    "fix": [
+      "@rector",
+      "@cs-fixer",
+      "@phpcbf"
+    ],
     "test": [
+      "@rector:test",
+      "@cs-fixer:test",
       "@phpcs",
       "@phpstan",
       "@phpunit"
     ]
   },
-  "require-dev": {
-    "squizlabs/php_codesniffer": "^3.10",
-    "systopia/test-fixtures": "*"
-  },
-  "repositories": [
-    {
-      "type": "path",
-      "url": "../test-fixtures",
-      "options": {
-        "symlink": true
-      }
-    }
-  ]
+  "conflict": {
+    "pear/mail_mime": "<1.10.2"
+  }
 }

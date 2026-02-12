@@ -1,4 +1,4 @@
-{crmScope extensionKey='de.systopia.assumedpayments'}
+{crmScope extensionKey='de.systopia.assumed-payments'}
 
 {$form.open}
   <div class="crm-block crm-form-block">

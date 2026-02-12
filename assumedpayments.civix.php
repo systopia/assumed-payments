@@ -8,7 +8,7 @@
  */
 class CRM_AssumedPayments_ExtensionUtil {
   const SHORT_NAME = 'assumedpayments';
-  const LONG_NAME = 'de.systopia.assumedpayments';
+  const LONG_NAME = 'de.systopia.assumed-payments';
   const CLASS_PREFIX = 'CRM_AssumedPayments';
 
   /**

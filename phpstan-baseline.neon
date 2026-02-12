@@ -1,0 +1,41 @@
+parameters:
+    ignoreErrors:
+        - message: '#http://bit.ly/nosuperglobals#'
+        - message: '#Do not throw the \\Exception base class.#'
+        - message: '#expects list<[^>]+>, array given.$#'
+        - identifier: argument.type
+        - identifier: elseif.condNotBoolean
+        - identifier: empty.notAllowed
+        - identifier: staticMethod.dynamicCall
+        - identifier: equal.notAllowed
+        - identifier: function.strict
+        - identifier: booleanNot.exprNotBoolean
+        - identifier: closure.useThis
+        - identifier: binaryOp.invalid
+        - identifier: throws.unusedType
+        - identifier: offsetAccess.nonOffsetAccessible
+        - identifier: missingType.iterableValue
+        - identifier: voku.If
+        - identifier: foreach.valueOverwrite
+        - identifier: property.dynamicName
+        - identifier: notEqual.notAllowed
+        - identifier: voku.NotEqual
+        - identifier: booleanAnd.rightNotBoolean
+        - identifier: booleanAnd.leftNotBoolean
+        - identifier: booleanOr.leftNotBoolean
+        - identifier: booleanOr.rightNotBoolean
+        - identifier: ternary.condNotBoolean
+        - identifier: variable.implicitArray
+        - identifier: new.static
+        - identifier: voku.NotIdentical
+        - identifier: if.condNotBoolean
+        - identifier: voku.Equal
+        - identifier: voku.BooleanAnd
+        - identifier: voku.BooleanAndNode
+        - identifier: voku.BooleanNot
+        - identifier: voku.Identical
+        - identifier: ternary.shortNotAllowed
+        - identifier: voku.Concat
+        - identifier: voku.Greater
+        - identifier: missingType.return
+        - identifier: missingType.parameter

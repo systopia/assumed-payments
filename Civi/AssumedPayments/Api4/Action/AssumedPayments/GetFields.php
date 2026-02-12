@@ -5,8 +5,13 @@ namespace Civi\AssumedPayments\Api4\Action\AssumedPayments;
 
 use Civi\Api4\AssumedPayments;
 use Civi\Api4\Generic\BasicGetFieldsAction;
-use CRM_Assumedpayments_ExtensionUtil as E;
+use CRM_AssumedPayments_ExtensionUtil as E;
 
+/**
+ * Provides field metadata for AssumedPayments API actions such as `schedule`
+ * and `runJob`. This action defines the supported input parameters, their data
+ * types, and descriptive labels for use in API consumers and UIs.
+ */
 class GetFields extends BasicGetFieldsAction {
 
   public function __construct() {
@@ -14,9 +19,12 @@ class GetFields extends BasicGetFieldsAction {
   }
 
   /**
+   * Returns field definitions for the AssumedPayments API.
+   *
    * @phpstan-return list<array<string, mixed>>
    */
   protected function getRecords(): array {
+    //TODO: How can we access the settings here to avoid redundancy?
     return [
       [
         'name' => 'fromDate',
@@ -33,8 +41,8 @@ class GetFields extends BasicGetFieldsAction {
         'description' => E::ts('End date (YYYY-MM-DD) for scheduling assumed payments'),
       ],
       [
-        'name' => 'limit',
-        'title' => E::ts('Limit'),
+        'name' => 'batchSize',
+        'title' => E::ts('Batch Size'),
         'data_type' => 'Integer',
         'required' => FALSE,
         'description' => E::ts('Maximum number of recurring contributions to process'),

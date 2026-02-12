@@ -1,25 +1,26 @@
 <?xml version="1.0"?>
-<extension key="de.systopia.assumedpayments" type="module">
+<extension key="de.systopia.assumed-payments" type="module">
   <file>assumedpayments</file>
   <name>Assumed Payments</name>
-  <description>FIXME</description>
+  <description>CiviCRM extension to automatically create `assumed payments` for recurring contributions where payments
+    are missing or still open within a defined date range.
+  </description>
   <license>AGPL-3.0</license>
   <authors>
     <author>
-      <name>Daniel Hahn</name>
-      <email>hahn@systopia.de</email>
-      <role>Maintainer</role>
+      <name>SYSTOPIA</name>
+      <email>info@systopia.de</email>
     </author>
   </authors>
   <urls>
-    <url desc="Main Extension Page">https://FIXME</url>
-    <url desc="Documentation">https://FIXME</url>
-    <url desc="Support">https://FIXME</url>
+    <url desc="Main Extension Page">https://github.com/systopia/assumed-payments</url>
+    <url desc="Documentation">https://github.com/systopia/assumed-payments/docs/index.md</url>
+    <url desc="Support">https://github.com/systopia/assumed-payments/issues</url>
     <url desc="Licensing">https://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
   <releaseDate>2025-12-05</releaseDate>
-  <version>1.0.0</version>
-  <develStage>alpha</develStage>
+  <version>1.0.0-dev</version>
+  <develStage>dev</develStage>
   <compatibility mode="semver">
     <comments>Semantic versioning. For example, compatibility with "6.1" implies compatibility with "6.2".</comments>
     <ver>6.8</ver>
@@ -35,7 +36,7 @@
     <comments>Listed versions. For example, specify both "4" and "5".</comments>
     <ver>5</ver>
   </smarty_compatibility>
-  <comments>This is a new, undeveloped module</comments>
+  <comments></comments>
   <classloader>
     <psr0 prefix="CRM_" path="."/>
     <psr4 prefix="Civi\" path="Civi"/>

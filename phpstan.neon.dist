@@ -1,6 +1,7 @@
 parameters:
 	paths:
 		- api
+		- Civi
 		- CRM
 		- tests
 		- assumedpayments.php
