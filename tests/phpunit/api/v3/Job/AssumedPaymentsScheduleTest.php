@@ -6,12 +6,12 @@ use PHPUnit\Framework\TestCase;
 use Systopia\TestFixtures\Fixtures\Scenarios\ContributionRecurScenario;
 
 /**
- * @covers ::civicrm_api3_job_assumedpayments_schedule
+ * @covers ::civicrm_api3_job_assumed_payments_schedule
  */
 final class AssumedPaymentsScheduleTest extends TestCase {
   private ?\CRM_Core_Transaction $tx = NULL;
 
-  private const QUEUE_NAME = 'de.systopia.assumedpayments';
+  private const QUEUE_NAME = 'assumed_payments';
 
   protected function setUp(): void {
     parent::setUp();
@@ -42,7 +42,7 @@ final class AssumedPaymentsScheduleTest extends TestCase {
     self::assertGreaterThan(0, $recurId);
 
     // 2) Run job (calls APIv4 schedule + runs queue)
-    $res = civicrm_api3('Job', 'assumedpayments_schedule', [
+    $res = civicrm_api3('Job', 'assumed_payments_schedule', [
       'fromDate' => '2025-01-01',
       'toDate' => '2025-01-31',
       'dryRun' => 1,
@@ -75,7 +75,7 @@ final class AssumedPaymentsScheduleTest extends TestCase {
     $recurId = (int) $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $res = civicrm_api3('Job', 'assumedpayments_schedule', [
+    $res = civicrm_api3('Job', 'assumed_payments_schedule', [
       'fromDate' => '2025-02-01',
       'toDate' => '2025-02-28',
       'dryRun' => 1,

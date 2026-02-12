@@ -14,35 +14,18 @@ if (file_exists(__DIR__ . '/bootstrap.local.php')) {
 eval(cv('php:boot --level=classloader', 'phpcode'));
 // phpcs:enable
 
-// Enable + upgrade the extension in the current (test) database.
-try {
-  $ext = \CRM_Extension_System::singleton()->getManager();
-  $key = 'de.systopia.assumedpayments';
-
-  if (!$ext->isEnabled($key)) {
-    $ext->enable([$key]);
-  }
-
-  \Civi::rebuild(['entities' => TRUE])->execute();
-  \CRM_Core_ManagedEntities::singleton()->reconcile();
-
-}
-catch (\Throwable $e) {
-  throw new \RuntimeException('Failed to enable/upgrade assumedpayments in test bootstrap: ' . $e->getMessage(), 0, $e);
-}
-
 if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
   require_once __DIR__ . '/../../vendor/autoload.php';
 }
 
 // Make CRM_AssumedPayments_ExtensionUtil available.
-require_once __DIR__ . '/../../assumedpayments.civix.php';
+require_once __DIR__ . '/../../assumed_payments.civix.php';
 
 // phpcs:disable PSR1.Files.SideEffects
 
 // Add test classes to class loader.
 addExtensionDirToClassLoader(__DIR__);
-addExtensionToClassLoader('de.systopia.assumedpayments');
+addExtensionToClassLoader('assumed-payments');
 
 if (!function_exists('ts')) {
   // Ensure function ts() is available - it's declared in the same file as CRM_Core_I18n in CiviCRM < 5.74.
@@ -53,7 +36,7 @@ if (!function_exists('ts')) {
 /**
  * Modify DI container for tests.
  */
-function _assumedpayments_test_civicrm_container(ContainerBuilder $container): void {
+function _assumed_payments_test_civicrm_container(ContainerBuilder $container): void {
 }
 
 function addExtensionToClassLoader(string $extension): void {

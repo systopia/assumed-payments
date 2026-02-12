@@ -15,7 +15,7 @@ use CRM_AssumedPayments_ExtensionUtil as E;
  * Resolves the effective scheduling parameters (API overrides > settings),
  * determines relevant recurring contribution ids for the given window, and
  * enqueues one queue task per recurring contribution into the SQL queue
- * `de.systopia.assumedpayments`.
+ * `assumed_payments`.
  */
 class Schedule extends AbstractAction {
 
@@ -42,22 +42,22 @@ class Schedule extends AbstractAction {
     $settings = Civi::settings();
 
     // Resolve date range: API override > settings
-    $from = $this->fromDate ?? $settings->get('assumedpayments_from_date');
-    $to = $this->toDate ?? $settings->get('assumedpayments_to_date');
+    $from = $this->fromDate ?? $settings->get('assumed_payments_from_date');
+    $to = $this->toDate ?? $settings->get('assumed_payments_to_date');
 
     // Batch Size
-    $batchSize = $this->batchSize ?? $settings->get('assumedpayments_batch_size');
+    $batchSize = $this->batchSize ?? $settings->get('assumed_payments_batch_size');
 
     // Dry run
     $isDryRun = $this->dryRun;
     if ($isDryRun === NULL) {
-      $isDryRun = $settings->get('assumedpayments_dry_run_default') ?? FALSE;
+      $isDryRun = $settings->get('assumed_payments_dry_run_default') ?? FALSE;
     }
 
     //Status Ids
     $openStatusIds = $this->openStatusIds;
     if ($openStatusIds === NULL) {
-      $openStatusIds = $settings->get('assumedpayments_contribution_status_ids') ?? [];
+      $openStatusIds = $settings->get('assumed_payments_contribution_status_ids') ?? [];
     }
     $openStatusIds = array_values(
       array_map('intval', $openStatusIds)
@@ -69,7 +69,7 @@ class Schedule extends AbstractAction {
     // Create queue
     $queue = \CRM_Queue_Service::singleton()->create([
       'type' => 'Sql',
-      'name' => E::LONG_NAME . '_schedule',
+      'name' => E::SHORT_NAME . '_schedule',
       'reset' => TRUE,
     ]);
 
@@ -97,7 +97,7 @@ class Schedule extends AbstractAction {
       'to_date' => $to,
       'recur_ids' => array_values($ids),
       'count' => count($ids),
-      'queue_name' => E::LONG_NAME . '_schedule',
+      'queue_name' => E::SHOR_NAME . '_schedule',
       'queued' => $queued,
     ];
   }

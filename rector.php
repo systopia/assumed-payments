@@ -14,7 +14,7 @@ return RectorConfig::configure()
       __DIR__ . '/api',
       __DIR__ . '/Civi',
       __DIR__ . '/CRM',
-      __DIR__ . '/assumedpayments.php',
+      __DIR__ . '/assumed_payments.php',
       __DIR__ . '/tests',
   ])
   ->withSkip([

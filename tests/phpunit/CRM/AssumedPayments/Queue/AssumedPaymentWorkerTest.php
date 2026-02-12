@@ -147,7 +147,7 @@ final class CRM_AssumedPayments_Queue_AssumedPaymentWorkerTest extends TestCase 
   private function createQueueContext(): CRM_Queue_TaskContext {
     $spec = [
       'type' => 'Sql',
-      'name' => 'assumedpayments-test',
+      'name' => 'assumed_payments-test',
       'reset' => TRUE,
     ];
 
@@ -216,7 +216,7 @@ final class CRM_AssumedPayments_Queue_AssumedPaymentWorkerTest extends TestCase 
    */
   private function assumedFlagExistsForContribution(int $contributionId): bool {
     $groupId = (int) civicrm_api3('CustomGroup', 'getvalue', [
-      'name' => 'assumedpayments_financialtrxn',
+      'name' => 'assumed_payments_financialtrxn',
       'return' => 'id',
     ]);
 

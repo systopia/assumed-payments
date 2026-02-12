@@ -11,7 +11,7 @@ declare(strict_types = 1);
  * - if an assumed payment already exists for that contribution, skip (idempotent)
  * - otherwise ensure a contribution instance exists (create if missing)
  * - create a payment (FinancialTrxn via Payment.create) and set the custom flag
- *   `assumedpayments_financialtrxn.is_assumed` on the created transaction
+ *   `assumed_payments_financialtrxn.is_assumed` on the created transaction
  */
 class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
 
@@ -169,7 +169,7 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
         ->addSelect('id')
         ->addWhere('entity_table', '=', 'civicrm_contribution')
         ->addWhere('entity_id', '=', $contributionId)
-        ->addWhere('financial_trxn_id.assumedpayments_financialtrxn.is_assumed', '=', TRUE)
+        ->addWhere('financial_trxn_id.assumed_payments_financialtrxn.is_assumed', '=', TRUE)
         ->setLimit(1)
         ->execute()
         ->first();
@@ -241,7 +241,7 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
         ->addValue('payment_instrument_id', 1)
         ->addValue('status_id:name', 'Completed')
         //At the moment the Payment Model is not able to save custom values - lets hope for an update
-        //->a d d V a l u e('assumedpayments_financialtrxn.assumed_payment', 1)
+        //->a d d V a l u e('assumed_payments_financialtrxn.assumed_payment', 1)
         ->execute();
 
       $trxn = $res->single();
@@ -261,7 +261,7 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
   }
 
   /**
-   * Sets the custom field `assumedpayments_financialtrxn.is_assumed` on a FinancialTrxn.
+   * Sets the custom field `assumed_payments_financialtrxn.is_assumed` on a FinancialTrxn.
    *
    * Note: Payment.create currently cannot persist custom values on FinancialTrxn
    * directly, therefore this uses APIv3 CustomValue.create.
@@ -274,7 +274,7 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
     try {
       $fieldId = (int) \Civi\Api4\CustomField::get(FALSE)
         ->addSelect('id')
-        ->addWhere('custom_group_id:name', '=', 'assumedpayments_financialtrxn')
+        ->addWhere('custom_group_id:name', '=', 'assumed_payments_financialtrxn')
         ->addWhere('name', '=', 'is_assumed')
         ->setLimit(1)
         ->execute()

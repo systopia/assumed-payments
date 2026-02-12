@@ -23,7 +23,7 @@ use Civi\Api4\AssumedPayments;
  *
  * @throws \CRM_Core_Exception
  */
-function civicrm_api3_job_assumedpayments_schedule(array $params): array {
+function civicrm_api3_job_assumed_payments_schedule(array $params): array {
   $action = AssumedPayments::runJob()
     ->setCheckPermissions(FALSE);
   $action->setFromDate($params['fromDate'] ?? NULL);
@@ -34,5 +34,5 @@ function civicrm_api3_job_assumedpayments_schedule(array $params): array {
 
   $row = $action->execute()->first();
 
-  return civicrm_api3_create_success($row, $params, 'Job', 'assumedpayments_schedule');
+  return civicrm_api3_create_success($row, $params, 'Job', 'assumed_payments_schedule');
 }

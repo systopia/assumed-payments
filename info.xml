@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<extension key="de.systopia.assumed-payments" type="module">
-  <file>assumedpayments</file>
+<extension key="assumed-payments" type="module">
+  <file>assumed_payments</file>
   <name>Assumed Payments</name>
   <description>CiviCRM extension to automatically create `assumed payments` for recurring contributions where payments
     are missing or still open within a defined date range.
@@ -44,7 +44,7 @@
   <civix>
     <namespace>CRM/AssumedPayments</namespace>
     <format>25.10.2</format>
-    <angularModule>crmAssumedpayments</angularModule>
+    <angularModule>crmAssumedPayments</angularModule>
   </civix>
   <mixins>
     <mixin>mgd-php@2.0.0</mixin>

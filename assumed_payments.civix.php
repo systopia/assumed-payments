@@ -7,8 +7,8 @@
  * extension.
  */
 class CRM_AssumedPayments_ExtensionUtil {
-  const SHORT_NAME = 'assumedpayments';
-  const LONG_NAME = 'de.systopia.assumed-payments';
+  const SHORT_NAME = 'assumed_payments';
+  const LONG_NAME = 'assumed-payments';
   const CLASS_PREFIX = 'CRM_AssumedPayments';
 
   /**
@@ -84,7 +84,7 @@ use CRM_AssumedPayments_ExtensionUtil as E;
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config
  */
-function _assumedpayments_civix_civicrm_config($config = NULL) {
+function _assumed_payments_civix_civicrm_config($config = NULL) {
   static $configured = FALSE;
   if ($configured) {
     return;
@@ -102,8 +102,8 @@ function _assumedpayments_civix_civicrm_config($config = NULL) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_install
  */
-function _assumedpayments_civix_civicrm_install() {
-  _assumedpayments_civix_civicrm_config();
+function _assumed_payments_civix_civicrm_install() {
+  _assumed_payments_civix_civicrm_config();
   // Based on <compatibility>, this does not currently require mixin/polyfill.php.
 }
 
@@ -112,8 +112,8 @@ function _assumedpayments_civix_civicrm_install() {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_enable
  */
-function _assumedpayments_civix_civicrm_enable(): void {
-  _assumedpayments_civix_civicrm_config();
+function _assumed_payments_civix_civicrm_enable(): void {
+  _assumed_payments_civix_civicrm_config();
   // Based on <compatibility>, this does not currently require mixin/polyfill.php.
 }
 
@@ -128,7 +128,7 @@ function _assumedpayments_civix_civicrm_enable(): void {
  *
  * @return bool
  */
-function _assumedpayments_civix_insert_navigation_menu(&$menu, $path, $item) {
+function _assumed_payments_civix_insert_navigation_menu(&$menu, $path, $item) {
   // If we are done going down the path, insert menu
   if (empty($path)) {
     $menu[] = [
@@ -149,7 +149,7 @@ function _assumedpayments_civix_insert_navigation_menu(&$menu, $path, $item) {
         if (!isset($entry['child'])) {
           $entry['child'] = [];
         }
-        $found = _assumedpayments_civix_insert_navigation_menu($entry['child'], implode('/', $path), $item);
+        $found = _assumed_payments_civix_insert_navigation_menu($entry['child'], implode('/', $path), $item);
       }
     }
     return $found;
@@ -159,9 +159,9 @@ function _assumedpayments_civix_insert_navigation_menu(&$menu, $path, $item) {
 /**
  * (Delegated) Implements hook_civicrm_navigationMenu().
  */
-function _assumedpayments_civix_navigationMenu(&$nodes) {
+function _assumed_payments_civix_navigationMenu(&$nodes) {
   if (!is_callable(['CRM_Core_BAO_Navigation', 'fixNavigationMenu'])) {
-    _assumedpayments_civix_fixNavigationMenu($nodes);
+    _assumed_payments_civix_fixNavigationMenu($nodes);
   }
 }
 
@@ -169,17 +169,17 @@ function _assumedpayments_civix_navigationMenu(&$nodes) {
  * Given a navigation menu, generate navIDs for any items which are
  * missing them.
  */
-function _assumedpayments_civix_fixNavigationMenu(&$nodes) {
+function _assumed_payments_civix_fixNavigationMenu(&$nodes) {
   $maxNavID = 1;
   array_walk_recursive($nodes, function($item, $key) use (&$maxNavID) {
     if ($key === 'navID') {
       $maxNavID = max($maxNavID, $item);
     }
   });
-  _assumedpayments_civix_fixNavigationMenuItems($nodes, $maxNavID, NULL);
+  _assumed_payments_civix_fixNavigationMenuItems($nodes, $maxNavID, NULL);
 }
 
-function _assumedpayments_civix_fixNavigationMenuItems(&$nodes, &$maxNavID, $parentID) {
+function _assumed_payments_civix_fixNavigationMenuItems(&$nodes, &$maxNavID, $parentID) {
   $origKeys = array_keys($nodes);
   foreach ($origKeys as $origKey) {
     if (!isset($nodes[$origKey]['attributes']['parentID']) && $parentID !== NULL) {
@@ -194,7 +194,7 @@ function _assumedpayments_civix_fixNavigationMenuItems(&$nodes, &$maxNavID, $par
       $origKey = $newKey;
     }
     if (isset($nodes[$origKey]['child']) && is_array($nodes[$origKey]['child'])) {
-      _assumedpayments_civix_fixNavigationMenuItems($nodes[$origKey]['child'], $maxNavID, $nodes[$origKey]['attributes']['navID']);
+      _assumed_payments_civix_fixNavigationMenuItems($nodes[$origKey]['child'], $maxNavID, $nodes[$origKey]['attributes']['navID']);
     }
   }
 }

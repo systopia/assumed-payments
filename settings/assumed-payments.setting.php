@@ -3,27 +3,27 @@
 use CRM_AssumedPayments_ExtensionUtil as E;
 
 return [
-  'assumedpayments_from_date' => [
+  'assumed_payments_from_date' => [
     'group_name' => 'AssumedPayments Settings',
     'type' => 'String',
     'html_type' => 'datepicker',
     'title' => E::ts('Date Range Start'),
     'description' => E::ts('Defines the start date for the definition of open payments.'),
     'is_domain' => 1,
-    'settings_pages' => ['assumedpayments' => ['weight' => 4]],
+    'settings_pages' => ['assumed_payments' => ['weight' => 4]],
   ],
 
-  'assumedpayments_to_date' => [
+  'assumed_payments_to_date' => [
     'group_name' => 'AssumedPayments Settings',
     'type' => 'String',
     'html_type' => 'datepicker',
     'title' => E::ts('Date Range End'),
     'description' => E::ts('Defines the end date for the definition of open payments.'),
     'is_domain' => 1,
-    'settings_pages' => ['assumedpayments' => ['weight' => 5]],
+    'settings_pages' => ['assumed_payments' => ['weight' => 5]],
   ],
 
-  'assumedpayments_contribution_status_ids' => [
+  'assumed_payments_contribution_status_ids' => [
     'group_name' => 'AssumedPayments Settings',
     'type' => 'Array',
     'html_type' => 'checkboxes',
@@ -35,10 +35,10 @@ return [
     'pseudoconstant' => [
       'callback' => 'CRM_AssumedPayments_Settings::contributionStatusOptions',
     ],
-    'settings_pages' => ['assumedpayments' => ['weight' => 6]],
+    'settings_pages' => ['assumed_payments' => ['weight' => 6]],
   ],
 
-  'assumedpayments_batch_size' => [
+  'assumed_payments_batch_size' => [
     'group_name' => 'AssumedPayments Settings',
     'type' => 'Integer',
     'html_type' => 'text',
@@ -46,10 +46,10 @@ return [
     'description' => E::ts('Defines the maximum of rows that should be changed per run.'),
     'is_domain' => 1,
     'default' => 500,
-    'settings_pages' => ['assumedpayments' => ['weight' => 8]],
+    'settings_pages' => ['assumed_payments' => ['weight' => 8]],
   ],
 
-  'assumedpayments_dry_run_default' => [
+  'assumed_payments_dry_run_default' => [
     'group_name' => 'AssumedPayments Settings',
     'type' => 'Boolean',
     'html_type' => 'checkbox',
@@ -58,6 +58,6 @@ return [
     E::ts('By Default this will simulate the task and return the results before applying the changes.'),
     'is_domain' => 1,
     'default' => 1,
-    'settings_pages' => ['assumedpayments' => ['weight' => 10]],
+    'settings_pages' => ['assumed_payments' => ['weight' => 10]],
   ],
 ];

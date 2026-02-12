@@ -7,7 +7,7 @@
 
     <table class="form-layout" style="max-width: 500px;">
       {foreach from=$elementNames item=elementName}
-        <tr class="crm-assumedpayments-row">
+        <tr class="crm-assumed_payments-row">
           <td class="label">{$form[$elementName].label}</td>
           <td>
             {$form[$elementName].html}

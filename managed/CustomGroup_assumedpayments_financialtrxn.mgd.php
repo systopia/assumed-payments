@@ -24,14 +24,14 @@ return [
     ],
   ],
   [
-    'name' => 'CustomGroup_assumedpayments_financialtrxn',
+    'name' => 'CustomGroup_assumed_payments_financialtrxn',
     'entity' => 'CustomGroup',
     'cleanup' => 'unused',
     'update' => 'always',
     'params' => [
       'version' => 4,
       'values' => [
-        'name' => 'assumedpayments_financialtrxn',
+        'name' => 'assumed_payments_financialtrxn',
         'table_name' => 'civicrm_value_assumedpayment',
         'title' => 'Assumed Payments',
         'extends' => 'FinancialTrxn',
@@ -47,14 +47,14 @@ return [
     ],
   ],
   [
-    'name' => 'CustomField_assumedpayments.is_assumed',
+    'name' => 'CustomField_assumed_payments.is_assumed',
     'entity' => 'CustomField',
     'cleanup' => 'unused',
     'update' => 'always',
     'params' => [
       'version' => 4,
       'values' => [
-        'custom_group_id.name' => 'assumedpayments_financialtrxn',
+        'custom_group_id.name' => 'assumed_payments_financialtrxn',
         'name' => 'is_assumed',
         'label' => 'Payment assumed',
         'data_type' => 'Boolean',

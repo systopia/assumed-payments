@@ -25,7 +25,7 @@ final class AssumedPaymentsSchedulePayloadTest extends TestCase {
     parent::tearDown();
   }
 
-  private const QUEUE_NAME = 'de.systopia.assumedpayments';
+  private const QUEUE_NAME = 'assumed_payments';
 
   public function testRun_EnqueuesQueueTasks_NotArrays(): void {
     $this->clearQueue(self::QUEUE_NAME);

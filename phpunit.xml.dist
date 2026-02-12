@@ -5,7 +5,7 @@
     <env name="SYMFONY_DEPRECATIONS_HELPER" value="max[direct]=0&amp;baselineFile=./tests/ignored-deprecations.json"/>
   </php>
   <testsuites>
-    <testsuite name="de.systopia.assumedpayments Test Suite">
+    <testsuite name="assumed-payments Test Suite">
       <directory>./tests/phpunit</directory>
     </testsuite>
   </testsuites>
