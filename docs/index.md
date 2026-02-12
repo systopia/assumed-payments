@@ -153,7 +153,7 @@ Managed entity file:
 Creates:
 
 - CustomGroup `assumed_payments_financialtrxn` extending `FinancialTrxn`
-  - table: `civicrm_value_assumedpayment`
+  - table: `civicrm_value_assumed_payments`
 - CustomField `is_assumed` (Boolean) on that group
 
 There is also a managed option value to ensure the `cg_extend_objects` option includes `FinancialTrxn`.

@@ -32,7 +32,7 @@ return [
       'version' => 4,
       'values' => [
         'name' => 'assumed_payments_financialtrxn',
-        'table_name' => 'civicrm_value_assumed_payment',
+        'table_name' => 'civicrm_value_assumed_payments',
         'title' => 'Assumed Payments',
         'extends' => 'FinancialTrxn',
         'style' => 'Inline',
