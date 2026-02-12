@@ -1,4 +1,4 @@
-Package: de.systopia.assumedpayments
+Package: assumed-payments
 Copyright (C) 2025, FIXME <FIXME>
 Licensed under the GNU Affero Public License 3.0 (below).
 

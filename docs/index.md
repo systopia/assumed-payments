@@ -1,4 +1,4 @@
-# de.systopia.assumedpayments
+# Assumed Payments
 
 CiviCRM extension to **create “assumed payments”** for recurring contributions in cases where a contribution instance is missing or remains “open” within a configured date window.
 
@@ -7,7 +7,7 @@ The extension provides:
 - A **settings form** to configure date range, “open” contribution statuses, batch size, and default dry-run behavior.
 - An **APIv4 action** `AssumedPayments.schedule` which identifies relevant recurring contributions and enqueues work items.
 - A **Queue worker** which ensures a pending contribution instance exists and then creates a payment + flags the resulting transaction as “assumed”.
-- An **APIv3 Scheduled Job** `Job.assumedpayments_schedule` which delegates to the APIv4 scheduler and then runs the queue.
+- An **APIv3 Scheduled Job** `Job.assumed_payments_schedule` which delegates to the APIv4 scheduler and then runs the queue.
 
 ---
 
@@ -35,16 +35,16 @@ The settings form is implemented at:
 
 Settings currently in use by the scheduler:
 
-- `assumedpayments_date_from` / `assumedpayments_date_to`  
+- `assumed_payments_date_from` / `assumed_payments_date_to`
   Absolute date window (stored normalized as `YYYY-MM-DD`).
-- `assumedpayments_contribution_status_ids`  
+- `assumed_payments_contribution_status_ids`
   Contribution statuses considered “open”.
-- `assumedpayments_batch_size`  
+- `assumed_payments_batch_size`
   Maximum number of recurs queued per run.
-- `assumedpayments_dry_run_default`  
+- `assumed_payments_dry_run_default`
   Default dry-run state if not overridden via API/job params.
 
-> Note: there is also a setting definition `assumedpayments_relative_date_filter` in `settings/assumedpayments.setting.php`, but the current scheduler implementation uses the absolute `*_date_from/to` settings.
+> Note: there is also a setting definition `assumed_payments_relative_date_filter` in `settings/assumed_payments.setting.php`, but the current scheduler implementation uses the absolute `*_date_from/to` settings.
 
 ---
 
@@ -55,13 +55,13 @@ File: `api/v3/Job/AssumedpaymentsSchedule.php`
 API name/action:
 
 - Entity: `Job`
-- Action: `assumedpayments_schedule`
+- Action: `assumed_payments_schedule`
 
 Behavior:
 
 - Builds APIv4 params from job params (if provided)
 - Calls `AssumedPayments.schedule` (APIv4) to **fill the queue**
-- Runs the queue `de.systopia.assumedpayments` via `CRM_Queue_Runner::runAll()`
+- Runs the queue `assumed_payments` via `CRM_Queue_Runner::runAll()`
 
 ### Supported job parameters (optional)
 
@@ -129,7 +129,7 @@ The scheduler enqueues one queue item per recur id.
 
 File: `CRM/AssumedPayments/Queue/AssumedPaymentWorker.php`
 
-Queue name: `de.systopia.assumedpayments`
+Queue name: `assumed_payments`
 
 For each item (`recur_id`, `dry_run`):
 
@@ -152,7 +152,7 @@ Managed entity file:
 
 Creates:
 
-- CustomGroup `assumedpayments_financialtrxn` extending `FinancialTrxn`
+- CustomGroup `assumed_payments_financialtrxn` extending `FinancialTrxn`
   - table: `civicrm_value_assumedpayment`
 - CustomField `is_assumed` (Boolean) on that group
 
@@ -184,8 +184,8 @@ Managed scheduled job definition:
 ## Troubleshooting
 
 - If nothing is queued:
-  - Verify `assumedpayments_date_from/to` are set and form a valid window.
-  - Verify `assumedpayments_contribution_status_ids` matches your intended “open” statuses.
+  - Verify `assumed_payments_date_from/to` are set and form a valid window.
+  - Verify `assumed_payments_contribution_status_ids` matches your intended “open” statuses.
   - Confirm recurs have `next_sched_contribution_date` within the configured window.
 
 - If payments are created repeatedly:

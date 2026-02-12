@@ -6,3 +6,5 @@
 /tools/*/vendor/
 /tools/*/composer.lock
 /vendor
+/tests/phpunit/bootstrap.local.php
+/.php-cs-fixer.cache

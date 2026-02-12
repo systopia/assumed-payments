@@ -5,12 +5,24 @@ declare(strict_types = 1);
 namespace phpunit\Civi\AssumedPayments\Api4\Action\AssumedPayments;
 
 use Civi\Api4\Generic\Result;
+use Civi\Test\HeadlessInterface;
+use Civi\Test\TransactionalInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \Civi\AssumedPayments\Api4\Action\AssumedPayments\GetFields
+ * @group headless
  */
-class AssumedPaymentsGetFieldsTest extends TestCase {
+class GetFieldsTest extends TestCase implements HeadlessInterface, TransactionalInterface {
+
+  /**
+   * {@inheritDoc}
+   */
+  public function setUpHeadless(): CiviEnvBuilder {
+    return Test::headless()
+      ->installMe(__DIR__)
+      ->apply();
+  }
 
   public function testGetFields_GetRecords_ReturnsExpectedFields(): void {
     $result = civicrm_api4('AssumedPayments', 'getFields', []);

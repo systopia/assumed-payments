@@ -7,7 +7,7 @@ insert_final_newline = true
 max_line_length = 120
 tab_width = 2
 ij_continuation_indent_size = 2
-ij_visual_guides = 80, 120
+ij_visual_guides = 80,120
 
 [{*.php}]
 ij_php_align_assignments = false

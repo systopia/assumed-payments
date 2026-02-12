@@ -1,9 +1,11 @@
 <?xml version="1.0"?>
 <menu>
   <item>
-    <path>civicrm/admin/setting/assumedpayments</path>
-    <page_callback>CRM_AssumedPayments_Form_AssumedPayments</page_callback>
-    <title>AssumedPayments</title>
+    <path>civicrm/admin/setting/assumed-payments</path>
+    <title>Assumed Payments</title>
+    <page_callback>CRM_Admin_Form_Generic</page_callback>
+    <return_url>civicrm/admin/setting/assumed-payments</return_url>
+    <page_arguments>reset=1</page_arguments>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
 </menu>

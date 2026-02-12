@@ -6,7 +6,7 @@
   <file>api</file>
   <file>CRM</file>
   <file>tests</file>
-  <file>assumedpayments.php</file>
+  <file>assumed_payments.php</file>
 
   <exclude-pattern>/CRM/Assumedpayments/DAO/.*\.php$</exclude-pattern>
   <exclude-pattern>tests/phpunit/bootstrap.local.php</exclude-pattern>

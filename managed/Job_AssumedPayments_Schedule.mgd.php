@@ -10,7 +10,7 @@ return [
       'description' => 'TODO:',
       'run_frequency' => 'Daily',
       'api_entity' => 'Job',
-      'api_action' => 'assumedpayments_schedule',
+      'api_action' => 'assumed_payments_schedule',
       'parameters' => '',
       'is_active' => 0,
     ],

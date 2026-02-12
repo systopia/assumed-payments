@@ -2,15 +2,28 @@
 
 declare(strict_types = 1);
 
+use Civi\Test;
+use Civi\Test\CiviEnvBuilder;
+use Civi\Test\HeadlessInterface;
 use PHPUnit\Framework\TestCase;
 use Systopia\TestFixtures\Fixtures\Scenarios\ContributionRecurScenario;
 
 /**
  * @covers CRM_AssumedPayments_Queue_AssumedPaymentWorker
+ * @group headless
  */
-final class CRM_AssumedPayments_Queue_AssumedPaymentWorkerTest extends TestCase {
+final class CRM_AssumedPayments_Queue_AssumedPaymentWorkerTest extends TestCase implements HeadlessInterface {
 
   private ?\CRM_Core_Transaction $tx = NULL;
+
+  /**
+   * {@inheritDoc}
+   */
+  public function setUpHeadless(): CiviEnvBuilder {
+    return Test::headless()
+      ->installMe(__DIR__)
+      ->apply();
+  }
 
   protected function setUp(): void {
     parent::setUp();
@@ -147,7 +160,7 @@ final class CRM_AssumedPayments_Queue_AssumedPaymentWorkerTest extends TestCase 
   private function createQueueContext(): CRM_Queue_TaskContext {
     $spec = [
       'type' => 'Sql',
-      'name' => 'assumedpayments-test',
+      'name' => 'assumed_payments-test',
       'reset' => TRUE,
     ];
 
@@ -216,7 +229,7 @@ final class CRM_AssumedPayments_Queue_AssumedPaymentWorkerTest extends TestCase 
    */
   private function assumedFlagExistsForContribution(int $contributionId): bool {
     $groupId = (int) civicrm_api3('CustomGroup', 'getvalue', [
-      'name' => 'assumedpayments_financialtrxn',
+      'name' => 'assumed_payments_financialtrxn',
       'return' => 'id',
     ]);
 
