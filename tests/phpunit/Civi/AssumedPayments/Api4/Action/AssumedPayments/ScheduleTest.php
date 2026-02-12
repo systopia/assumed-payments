@@ -6,12 +6,24 @@ declare(strict_types = 1);
 namespace phpunit\Civi\AssumedPayments\Api4\Action\AssumedPayments;
 
 use Civi\Test\Api4TestTrait;
+use Civi\Test\HeadlessInterface;
+use Civi\Test\TransactionalInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \Civi\AssumedPayments\Api4\Action\AssumedPayments\Schedule
+ * @group headless
  */
-class ScheduleTest extends TestCase {
+class ScheduleTest extends TestCase implements HeadlessInterface, TransactionalInterface {
+
+  /**
+   * {@inheritDoc}
+   */
+  public function setUpHeadless(): CiviEnvBuilder {
+    return Test::headless()
+      ->installMe(__DIR__)
+      ->apply();
+  }
 
   use Api4TestTrait;
 

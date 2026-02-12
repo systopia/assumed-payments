@@ -1,6 +1,13 @@
 {
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/systopia/test-fixtures.git"
+        }
+    ],
     "require": {
-        "symfony/phpunit-bridge": "^7"
+        "symfony/phpunit-bridge": "^7",
+        "systopia/test-fixtures": "dev-main"
     },
     "scripts": {
         "post-install-cmd": [

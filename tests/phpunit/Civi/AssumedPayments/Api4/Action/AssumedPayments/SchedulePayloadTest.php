@@ -2,13 +2,25 @@
 
 declare(strict_types = 1);
 
+use Civi\Test\HeadlessInterface;
+use Civi\Test\TransactionalInterface;
 use PHPUnit\Framework\TestCase;
 use Systopia\TestFixtures\Fixtures\Scenarios\ContributionRecurScenario;
 
 /**
  * @covers \Civi\AssumedPayments\Api4\Action\AssumedPayments\Schedule
+ * @group headless
  */
-final class AssumedPaymentsSchedulePayloadTest extends TestCase {
+final class SchedulePayloadTest extends TestCase implements HeadlessInterface, TransactionalInterface {
+
+  /**
+   * {@inheritDoc}
+   */
+  public function setUpHeadless(): CiviEnvBuilder {
+    return Test::headless()
+      ->installMe(__DIR__)
+      ->apply();
+  }
 
   private ?\CRM_Core_Transaction $tx = NULL;
 
