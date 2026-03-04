@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace Civi\AssumedPayments\Api4\Action\AssumedPayments;
 
-use Civi\Api4\AssumedPayments;
+use Civi\Api4\AssumedPaymentsEntity;
 use Civi\Api4\Generic\AbstractAction;
 use Civi\Api4\Generic\Result;
 use CRM_Queue_Runner;
@@ -14,10 +14,10 @@ use CRM_AssumedPayments_ExtensionUtil as E;
 /**
  * APIv4 action: AssumedPayments.runJob
  *
- * Schedules assumed payment tasks via {@see \Civi\Api4\AssumedPayments::schedule()}
+ * Schedules assumed payment tasks via {@see \Civi\Api4\AssumedPaymentsEntity::schedule()}
  * and then runs the SQL queue {@see CRM_Queue_Runner}.
  *
- * Input parameters are provided via setters (fromDate, toDate, batchSize, dryRun,
+ * Input parameters are provided via setters (fromDate, toDate, batchSize,
  * openStatusIds) and forwarded to the schedule action after normalization.
  */
 final class RunJob extends AbstractAction {
@@ -26,8 +26,9 @@ final class RunJob extends AbstractAction {
   protected ?string $fromDate = NULL;
   protected ?string $toDate = NULL;
   protected ?int $batchSize = NULL;
-  protected ?bool $dryRun = NULL;
   protected null|string|array $openStatusIds = NULL;
+  protected null|string|array $paymentInstrumentIds = NULL;
+  protected null|string|array $financialTypeIds = NULL;
 
   /**
    * Executes the action.
@@ -42,7 +43,7 @@ final class RunJob extends AbstractAction {
   public function _run(Result $result): void {
 
     try {
-      $action = AssumedPayments::schedule()
+      $action = AssumedPaymentsEntity::schedule()
         ->setCheckPermissions(FALSE);
 
       $params = $this->buildScheduleParamsFromValues();
@@ -50,14 +51,17 @@ final class RunJob extends AbstractAction {
       $action->setFromDate($params['fromDate'] ?? NULL);
       $action->setToDate($params['toDate'] ?? NULL);
       $action->setBatchSize($params['batchSize'] ?? NULL);
-      $action->setDryRun($params['dryRun'] ?? NULL);
       $action->setOpenStatusIds($params['openStatusIds'] ?? NULL);
+      $action->setPaymentInstrumentIds($params['paymentInstrumentIds'] ?? NULL);
+      $action->setFinancialTypeIds($params['financialTypeIds'] ?? NULL);
 
       $row = $action->execute()->first();
     }
+    //@codeCoverageIgnoreStart
     catch (\CRM_Core_Exception) {
       return;
     }
+    //@codeCoverageIgnoreEnd
 
     $queued = (int) ($row['queued'] ?? 0);
 
@@ -96,7 +100,7 @@ final class RunJob extends AbstractAction {
    * JSON string.
    *
    * @return array<string, mixed>
-   *   Keys match the schedule action setters (fromDate, toDate, batchSize, dryRun, openStatusIds).
+   *   Keys match the schedule action setters (fromDate, toDate, batchSize, openStatusIds).
    */
   private function buildScheduleParamsFromValues(): array {
     $params = [];
@@ -114,11 +118,6 @@ final class RunJob extends AbstractAction {
     $batchSize = $this->batchSize;
     if ($batchSize !== NULL) {
       $params['batchSize'] = $batchSize;
-    }
-
-    $dryRun = $this->dryRun;
-    if ($dryRun !== NULL) {
-      $params['dryRun'] = $dryRun;
     }
 
     // openStatusIds can be array or JSON string
@@ -155,12 +154,16 @@ final class RunJob extends AbstractAction {
     $this->batchSize = $value;
   }
 
-  public function setDryRun(?bool $value): void {
-    $this->dryRun = $value;
-  }
-
   public function setOpenStatusIds(null|string|array $value): void {
     $this->openStatusIds = $value;
+  }
+
+  public function setPaymentInstrumentIds(null|string|array $value): void {
+    $this->paymentInstrumentIds = $value;
+  }
+
+  public function setFinancialTypeIds(null|string|array $value): void {
+    $this->financialTypeIds = $value;
   }
 
 }

@@ -5,7 +5,7 @@ declare(strict_types = 1);
 namespace Civi\AssumedPayments\Api4\Action\AssumedPayments;
 
 use Civi;
-use Civi\Api4\AssumedPayments;
+use Civi\Api4\AssumedPaymentsEntity;
 use Civi\Api4\Generic\AbstractAction;
 use Civi\Api4\Generic\Result;
 use CRM_AssumedPayments_Queue_AssumedPaymentWorker;
@@ -20,15 +20,16 @@ use CRM_AssumedPayments_ExtensionUtil as E;
 class Schedule extends AbstractAction {
 
   public function __construct() {
-    parent::__construct(AssumedPayments::getEntityName(), 'schedule');
+    parent::__construct(AssumedPaymentsEntity::getEntityName(), 'schedule');
   }
 
   // API overrides
   protected ?string $fromDate = NULL;
   protected ?string $toDate = NULL;
   protected ?int $batchSize = NULL;
-  protected ?bool $dryRun = NULL;
   protected ?array $openStatusIds = NULL;
+  protected null|string|array $paymentInstrumentIds = NULL;
+  protected null|string|array $financialTypeIds = NULL;
 
   /**
    * Schedules recurring contributions for assumed payment processing.
@@ -47,11 +48,8 @@ class Schedule extends AbstractAction {
 
     // Batch Size
     $batchSize = $this->batchSize ?? $settings->get('assumed_payments_batch_size');
-
-    // Dry run
-    $isDryRun = $this->dryRun;
-    if ($isDryRun === NULL) {
-      $isDryRun = $settings->get('assumed_payments_dry_run_default') ?? FALSE;
+    if ($batchSize === NULL) {
+      $batchSize = 500;
     }
 
     //Status Ids
@@ -63,13 +61,36 @@ class Schedule extends AbstractAction {
       array_map('intval', $openStatusIds)
     );
 
+    $paymentInstrumentIds = $this->paymentInstrumentIds;
+    if ($paymentInstrumentIds === NULL) {
+      $paymentInstrumentIds = $settings->get('assumed_payments_payment_instrument_ids') ?? [];
+    }
+    $paymentInstrumentIds = array_values(
+      array_map('intval', $paymentInstrumentIds)
+    );
+
+    $financialTypeIds = $this->financialTypeIds;
+    if ($financialTypeIds === NULL) {
+      $financialTypeIds = $settings->get('assumed_payments_financial_type_ids') ?? [];
+    }
+    $financialTypeIds = array_values(
+      array_map('intval', $financialTypeIds)
+    );
+
     // Find relevant recur IDs (DB-side) based on missing contribution in range OR open contribution status in range
-    $ids = $this->findRelevantRecurIds($from, $to, $openStatusIds, $batchSize);
+    $ids = $this->findRelevantRecurIds(
+      $from,
+      $to,
+      $openStatusIds,
+      $paymentInstrumentIds,
+      $financialTypeIds,
+      $batchSize
+    );
 
     // Create queue
     $queue = \CRM_Queue_Service::singleton()->create([
       'type' => 'Sql',
-      'name' => E::SHORT_NAME . '_schedule',
+      'name' => E::LONG_NAME . '_schedule',
       'reset' => TRUE,
     ]);
 
@@ -81,7 +102,6 @@ class Schedule extends AbstractAction {
           [
             [
               'recur_id' => $recurId,
-              'dry_run' => $isDryRun,
             ],
           ],
           'AssumedPayments recur_id=' . $recurId
@@ -92,12 +112,11 @@ class Schedule extends AbstractAction {
 
     // Result summary
     $result[] = [
-      'dryRun' => $isDryRun,
       'from_date' => $from,
       'to_date' => $to,
       'recur_ids' => array_values($ids),
       'count' => count($ids),
-      'queue_name' => E::SHOR_NAME . '_schedule',
+      'queue_name' => E::LONG_NAME . '_schedule',
       'queued' => $queued,
     ];
   }
@@ -115,7 +134,14 @@ class Schedule extends AbstractAction {
    * @return list<int>
    * @throws Civi\Core\Exception\DBQueryException
    */
-  private function findRelevantRecurIds(?string $from, ?string $to, array $openStatusIds, int $batchSize): array {
+  private function findRelevantRecurIds(
+    ?string $from,
+    ?string $to,
+    array $openStatusIds,
+    array $paymentInstrumentIds,
+    array $financialTypeIds,
+    int $batchSize
+  ): array {
     if (in_array($from, [NULL, '', '0'], TRUE) || in_array($to, [NULL, '', '0'], TRUE)) {
       return [];
     }
@@ -125,7 +151,7 @@ class Schedule extends AbstractAction {
       2 => [$to, 'String'],
     ];
 
-    // Generate the list of statuses
+    // Contribution Status IN
     $inParts = [];
     $idx = 3;
     foreach ($openStatusIds as $sid) {
@@ -135,6 +161,30 @@ class Schedule extends AbstractAction {
     }
     // empty => no open-status match possible
     $inSql = $inParts !== [] ? implode(',', $inParts) : 'NULL';
+
+    // PaymentInstrument IN
+    $piParts = [];
+    $piSql = '1=1';
+    if ($paymentInstrumentIds !== []) {
+      foreach ($paymentInstrumentIds as $pid) {
+        $piParts[] = '%' . $idx;
+        $params[$idx] = [(int) $pid, 'Integer'];
+        $idx++;
+      }
+      $piSql = 'recur.payment_instrument_id IN (' . implode(',', $piParts) . ')';
+    }
+
+    // FinancialType IN
+    $ftParts = [];
+    $ftSql = '1=1';
+    if ($financialTypeIds !== []) {
+      foreach ($financialTypeIds as $fid) {
+        $ftParts[] = '%' . $idx;
+        $params[$idx] = [(int) $fid, 'Integer'];
+        $idx++;
+      }
+      $ftSql = 'recur.financial_type_id IN (' . implode(',', $ftParts) . ')';
+    }
 
     // Generate the Limit Parameter
     $limitSql = '';
@@ -163,6 +213,10 @@ class Schedule extends AbstractAction {
       ) contrib
         ON contrib.contribution_recur_id = recur.id
       WHERE recur.is_test = 0
+        -- And Payment Instrument IN ...
+        AND ( ' . $piSql . ' )
+        -- AND Financial Type IN ...
+        AND ( ' . $ftSql . ' )
         -- Next scheduled contribution must fall within the given date range
         AND recur.next_sched_contribution_date IS NOT NULL
         AND recur.next_sched_contribution_date >= %1
@@ -206,12 +260,16 @@ class Schedule extends AbstractAction {
     $this->batchSize = $value;
   }
 
-  public function setDryRun(?bool $value): void {
-    $this->dryRun = $value;
-  }
-
   public function setOpenStatusIds(?array $value): void {
     $this->openStatusIds = $value;
+  }
+
+  public function setPaymentInstrumentIds(null|string|array $value): void {
+    $this->paymentInstrumentIds = $value;
+  }
+
+  public function setFinancialTypeIds(null|string|array $value): void {
+    $this->financialTypeIds = $value;
   }
 
 }

@@ -2,29 +2,15 @@
 
 declare(strict_types = 1);
 
-use Civi\Test;
-use Civi\Test\CiviEnvBuilder;
-use Civi\Test\HeadlessInterface;
-use Civi\Test\TransactionalInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \Civi\Api4\AssumedPayments
- * @group headless
+ * @covers \Civi\Api4\AssumedPaymentsEntity
  */
-final class AssumedPaymentsEntityTest extends TestCase implements HeadlessInterface, TransactionalInterface {
+final class AssumedPaymentsEntityTest extends TestCase {
 
-  /**
-   * {@inheritDoc}
-   */
-  public function setUpHeadless(): CiviEnvBuilder {
-    return Test::headless()
-      ->installMe(__DIR__)
-      ->apply();
-  }
-
-  public function testGetFieldsReturnsExpectedActionInstance(): void {
-    $action = \Civi\Api4\AssumedPayments::getFields();
+  public function testGetFields_ReturnsExpectedActionInstance(): void {
+    $action = \Civi\Api4\AssumedPaymentsEntity::getFields();
 
     $this->assertInstanceOf(
       \Civi\AssumedPayments\Api4\Action\AssumedPayments\GetFields::class,
@@ -32,11 +18,20 @@ final class AssumedPaymentsEntityTest extends TestCase implements HeadlessInterf
     );
   }
 
-  public function testScheduleReturnsExpectedActionInstance(): void {
-    $action = \Civi\Api4\AssumedPayments::schedule();
+  public function testSchedule_ReturnsExpectedActionInstance(): void {
+    $action = \Civi\Api4\AssumedPaymentsEntity::schedule();
 
     $this->assertInstanceOf(
       \Civi\AssumedPayments\Api4\Action\AssumedPayments\Schedule::class,
+      $action
+    );
+  }
+
+  public function testRunJob_ReturnsExpectedActionInstance(): void {
+    $action = \Civi\Api4\AssumedPaymentsEntity::runJob();
+
+    $this->assertInstanceOf(
+      \Civi\AssumedPayments\Api4\Action\AssumedPayments\RunJob::class,
       $action
     );
   }

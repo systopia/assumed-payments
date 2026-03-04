@@ -3,7 +3,7 @@ declare(strict_types = 1);
 
 namespace Civi\AssumedPayments\Api4\Action\AssumedPayments;
 
-use Civi\Api4\AssumedPayments;
+use Civi\Api4\AssumedPaymentsEntity;
 use Civi\Api4\Generic\BasicGetFieldsAction;
 use CRM_AssumedPayments_ExtensionUtil as E;
 
@@ -15,7 +15,7 @@ use CRM_AssumedPayments_ExtensionUtil as E;
 class GetFields extends BasicGetFieldsAction {
 
   public function __construct() {
-    parent::__construct(AssumedPayments::getEntityName(), 'getFields');
+    parent::__construct(AssumedPaymentsEntity::getEntityName(), 'getFields');
   }
 
   /**
@@ -24,42 +24,63 @@ class GetFields extends BasicGetFieldsAction {
    * @phpstan-return list<array<string, mixed>>
    */
   protected function getRecords(): array {
-    //TODO: How can we access the settings here to avoid redundancy?
+    $all = \Civi\Core\SettingsMetadata::getMetadata();
+
+    $mine = array_filter(
+      $all,
+      fn($k): bool => str_starts_with($k, 'assumed_payments_'),
+      ARRAY_FILTER_USE_KEY
+    );
+
     return [
       [
         'name' => 'fromDate',
-        'title' => E::ts('From date'),
+        'title' => $mine['assumed_payments_from_date']['title'],
         'data_type' => 'String',
         'required' => FALSE,
-        'description' => E::ts('Start date (YYYY-MM-DD) for scheduling assumed payments'),
+        'description' => $mine['assumed_payments_from_date']['description'],
       ],
       [
         'name' => 'toDate',
-        'title' => E::ts('To date'),
+        'title' => $mine['assumed_payments_to_date']['title'],
         'data_type' => 'String',
         'required' => FALSE,
-        'description' => E::ts('End date (YYYY-MM-DD) for scheduling assumed payments'),
+        'description' => $mine['assumed_payments_to_date']['description'],
       ],
       [
         'name' => 'batchSize',
-        'title' => E::ts('Batch Size'),
+        'title' => $mine['assumed_payments_batch_size']['title'],
         'data_type' => 'Integer',
         'required' => FALSE,
-        'description' => E::ts('Maximum number of recurring contributions to process'),
-      ],
-      [
-        'name' => 'dryRun',
-        'title' => E::ts('Dry Run'),
-        'data_type' => 'Boolean',
-        'required' => FALSE,
-        'description' => E::ts('If enabled, no contributions or payments are created'),
+        'description' => $mine['assumed_payments_batch_size']['description'],
       ],
       [
         'name' => 'openStatusIds',
-        'title' => E::ts('Status Ids'),
+        'title' => $mine['assumed_payments_contribution_status_ids']['title'],
         'data_type' => 'Array',
         'required' => FALSE,
-        'description' => E::ts('Status Ids of Contributions considered as "Open"'),
+        'description' => $mine['assumed_payments_contribution_status_ids']['description'],
+      ],
+      [
+        'name' => 'paymentInstrumentIds',
+        'title' => $mine['assumed_payments_payment_instrument_ids']['title'],
+        'data_type' => 'Array',
+        'required' => FALSE,
+        'description' => $mine['assumed_payments_payment_instrument_ids']['description'],
+      ],
+      [
+        'name' => 'financialTypeIds',
+        'title' => $mine['assumed_payments_financial_type_ids']['title'],
+        'data_type' => 'Array',
+        'required' => FALSE,
+        'description' => $mine['assumed_payments_financial_type_ids']['description'],
+      ],
+      [
+        'name' => 'finalContributionState',
+        'title' => $mine['assumed_payments_final_contribution_state']['title'],
+        'data_type' => 'String',
+        'required' => FALSE,
+        'description' => $mine['assumed_payments_final_contribution_state']['description'],
       ],
     ];
   }

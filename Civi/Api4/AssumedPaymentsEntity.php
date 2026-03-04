@@ -16,7 +16,7 @@ use Civi\AssumedPayments\Api4\Action\AssumedPayments\Schedule;
  * contributions. It does not represent a database-backed entity, but serves as
  * an action-only API namespace.
  */
-class AssumedPayments extends AbstractEntity {
+class AssumedPaymentsEntity extends AbstractEntity {
 
   /**
    * Returns the field definitions for the AssumedPayments API.

@@ -60,16 +60,18 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
           );
           return FALSE;
         }
-        self::markContributionAsCompleted($contributionId);
       }
       else {
         // no contribution exists -> create it
         $contributionId = self::createContributionInstanceFromRecur($recurId);
       }
-
       // If we reach here, we must create payment + flag
       $amount = self::getContributionAmount($contributionId);
       $trxnId = self::createAssumedPayment($contributionId, $amount);
+
+      //and mark the contribution with the intended state
+      self::markContributionAsCompleted($contributionId);
+
       self::flagAssumedOnTrxn($trxnId);
 
       $tx->commit();
@@ -323,10 +325,21 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
    * @throws \CRM_Core_Exception
    */
   private static function markContributionAsCompleted(int $contributionId): void {
+
     try {
-      \Civi\Api4\Contribution::update(FALSE)
-        ->addValue('contribution_status_id:name', 'Completed')
-        ->addWhere('id', '=', $contributionId)
+      $settings = Civi::settings();
+      $finalContributionState = $settings->get('assumed_payments_final_contribution_state');
+
+      $result = \Civi\Api4\Contribution::update(FALSE);
+
+      if ($finalContributionState !== NULL) {
+        $result->addValue('contribution_status_id', $finalContributionState);
+      }
+      else {
+        $result->addValue('contribution_status_id:name', 'Completed');
+      }
+
+      $result->addWhere('id', '=', $contributionId)
         ->execute();
     }
     //@codeCoverageIgnoreStart

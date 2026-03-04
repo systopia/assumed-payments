@@ -58,7 +58,7 @@ return [
         'name' => 'is_assumed',
         'label' => 'Payment assumed',
         'data_type' => 'Boolean',
-        'html_type' => 'CheckBox',
+        'html_type' => 'Radio',
         'serialize' => 0,
         'is_required' => FALSE,
         'is_searchable' => TRUE,
