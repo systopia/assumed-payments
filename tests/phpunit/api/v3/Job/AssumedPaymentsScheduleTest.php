@@ -52,13 +52,6 @@ final class AssumedPaymentsScheduleTest extends TestCase implements HeadlessInte
   /**
    * ---- helpers
    */
-  private function clearQueue(string $queueName): void {
-    \CRM_Core_DAO::executeQuery(
-      'DELETE FROM civicrm_queue_item WHERE queue_name = %1',
-      [1 => [$queueName, 'String']]
-    );
-  }
-
   private function queueCount(string $queueName): int {
     return (int) \CRM_Core_DAO::singleValueQuery(
       'SELECT COUNT(*) FROM civicrm_queue_item WHERE queue_name = %1',
