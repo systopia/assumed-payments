@@ -42,6 +42,7 @@ final class AssumedPaymentsScheduleTest extends TestCase implements HeadlessInte
     ]);
 
     self::assertSame(0, (int) ($res['is_error'] ?? 1));
+    /** @phpstan-var array{scheduled?: int, queue_items_after?: int} $values */
     $values = $res['values'] ?? [];
     self::assertIsArray($values);
     self::assertSame(0, (int) ($values['scheduled'] ?? -1));

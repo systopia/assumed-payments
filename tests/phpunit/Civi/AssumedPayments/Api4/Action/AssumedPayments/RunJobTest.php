@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace phpunit\Civi\AssumedPayments\Api4\Action\AssumedPayments;
 
-use Civi\Api4\AssumedPaymentsEntity;
+use Civi\Api4\AssumedPayments;
 use Civi\Test;
 use Civi\Test\CiviEnvBuilder;
 use Civi\Test\HeadlessInterface;
@@ -36,7 +36,7 @@ final class RunJobTest extends TestCase implements HeadlessInterface, Transactio
     $recurId = (int) $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $action = AssumedPaymentsEntity::runJob();
+    $action = AssumedPayments::runJob();
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
@@ -45,7 +45,7 @@ final class RunJobTest extends TestCase implements HeadlessInterface, Transactio
     $action->setPaymentInstrumentIds([1]);
 
     $result = $action->execute();
-    self::assertSame(1, $result->count());
+    self::assertCount(1, $result);
 
     $row = $result->first();
     self::assertIsArray($row);
@@ -64,11 +64,11 @@ final class RunJobTest extends TestCase implements HeadlessInterface, Transactio
     self::assertIsInt($row['processed']);
     self::assertIsInt($row['queue_items_after']);
 
-    self::assertGreaterThanOrEqual(1, (int) $row['scheduled']);
-    self::assertGreaterThanOrEqual(1, (int) $row['queue_items_before']);
+    self::assertGreaterThanOrEqual(1, $row['scheduled']);
+    self::assertGreaterThanOrEqual(1, $row['queue_items_before']);
 
-    self::assertGreaterThanOrEqual(1, (int) $row['processed']);
-    self::assertSame(0, (int) $row['queue_items_after']);
+    self::assertGreaterThanOrEqual(1, $row['processed']);
+    self::assertSame(0, $row['queue_items_after']);
 
     self::assertIsArray($row['api4_result']);
     self::assertArrayHasKey('queued', $row['api4_result']);
@@ -87,14 +87,14 @@ final class RunJobTest extends TestCase implements HeadlessInterface, Transactio
     $recurId = (int) $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $action = AssumedPaymentsEntity::runJob();
+    $action = AssumedPayments::runJob();
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
     $action->setOpenStatusIds(json_encode([1]));
 
     $result = $action->execute();
-    self::assertSame(1, $result->count());
+    self::assertCount(1, $result);
   }
 
   /**

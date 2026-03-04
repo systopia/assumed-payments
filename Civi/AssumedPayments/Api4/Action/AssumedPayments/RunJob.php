@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace Civi\AssumedPayments\Api4\Action\AssumedPayments;
 
-use Civi\Api4\AssumedPaymentsEntity;
+use Civi\Api4\AssumedPayments;
 use Civi\Api4\Generic\AbstractAction;
 use Civi\Api4\Generic\Result;
 use CRM_Queue_Runner;
@@ -14,7 +14,7 @@ use CRM_AssumedPayments_ExtensionUtil as E;
 /**
  * APIv4 action: AssumedPayments.runJob
  *
- * Schedules assumed payment tasks via {@see \Civi\Api4\AssumedPaymentsEntity::schedule()}
+ * Schedules assumed payment tasks via {@see \Civi\Api4\AssumedPayments::schedule()}
  * and then runs the SQL queue {@see CRM_Queue_Runner}.
  *
  * Input parameters are provided via setters (fromDate, toDate, batchSize,
@@ -43,7 +43,7 @@ final class RunJob extends AbstractAction {
   public function _run(Result $result): void {
 
     try {
-      $action = AssumedPaymentsEntity::schedule()
+      $action = AssumedPayments::schedule()
         ->setCheckPermissions(FALSE);
 
       $params = $this->buildScheduleParamsFromValues();

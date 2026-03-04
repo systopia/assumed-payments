@@ -5,32 +5,32 @@ declare(strict_types = 1);
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \Civi\Api4\AssumedPaymentsEntity
+ * @covers \Civi\Api4\AssumedPayments
  */
-final class AssumedPaymentsEntityTest extends TestCase {
+final class AssumedPaymentsTest extends TestCase {
 
   public function testGetFields_ReturnsExpectedActionInstance(): void {
-    $action = \Civi\Api4\AssumedPaymentsEntity::getFields();
+    $action = \Civi\Api4\AssumedPayments::getFields();
 
-    $this->assertInstanceOf(
+    self::assertInstanceOf(
       \Civi\AssumedPayments\Api4\Action\AssumedPayments\GetFields::class,
       $action
     );
   }
 
   public function testSchedule_ReturnsExpectedActionInstance(): void {
-    $action = \Civi\Api4\AssumedPaymentsEntity::schedule();
+    $action = \Civi\Api4\AssumedPayments::schedule();
 
-    $this->assertInstanceOf(
+    self::assertInstanceOf(
       \Civi\AssumedPayments\Api4\Action\AssumedPayments\Schedule::class,
       $action
     );
   }
 
   public function testRunJob_ReturnsExpectedActionInstance(): void {
-    $action = \Civi\Api4\AssumedPaymentsEntity::runJob();
+    $action = \Civi\Api4\AssumedPayments::runJob();
 
-    $this->assertInstanceOf(
+    self::assertInstanceOf(
       \Civi\AssumedPayments\Api4\Action\AssumedPayments\RunJob::class,
       $action
     );

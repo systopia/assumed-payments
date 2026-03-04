@@ -4,8 +4,12 @@ declare(strict_types = 1);
 
 class CRM_AssumedPayments_Settings {
 
+  public const DEFAULT_BATCH_SIZE = 500;
+
   /**
    * Defines the valid contribution status ids for the form
+   *
+   * @return array<int, string>
    */
   public static function contributionStatusOptions(): array {
     $array = self::contributionStatusOptionsFull();

@@ -2,12 +2,12 @@
 
 declare(strict_types = 1);
 
-use Civi\Api4\AssumedPaymentsEntity;
+use Civi\Api4\AssumedPayments;
 
 /**
  * Scheduled Job (APIv3 wrapper).
  *
- * Thin APIv3 wrapper around the APIv4 action {@see \Civi\Api4\AssumedPaymentsEntity::runJob()}.
+ * Thin APIv3 wrapper around the APIv4 action {@see \Civi\Api4\AssumedPayments::runJob()}.
  * Supported parameters (all optional):
  * - fromDate (string): Start date (YYYY-MM-DD or datetime)
  * - toDate (string): End date (YYYY-MM-DD or datetime)
@@ -25,7 +25,7 @@ use Civi\Api4\AssumedPaymentsEntity;
  * @throws \CRM_Core_Exception
  */
 function civicrm_api3_job_assumed_payments_schedule(array $params): array {
-  $action = AssumedPaymentsEntity::runJob()
+  $action = AssumedPayments::runJob()
     ->setCheckPermissions(FALSE);
   $action->setFromDate($params['fromDate'] ?? NULL);
   $action->setToDate($params['toDate'] ?? NULL);

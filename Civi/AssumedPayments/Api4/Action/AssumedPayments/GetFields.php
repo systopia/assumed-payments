@@ -3,7 +3,7 @@ declare(strict_types = 1);
 
 namespace Civi\AssumedPayments\Api4\Action\AssumedPayments;
 
-use Civi\Api4\AssumedPaymentsEntity;
+use Civi\Api4\AssumedPayments;
 use Civi\Api4\Generic\BasicGetFieldsAction;
 use CRM_AssumedPayments_ExtensionUtil as E;
 
@@ -15,7 +15,7 @@ use CRM_AssumedPayments_ExtensionUtil as E;
 class GetFields extends BasicGetFieldsAction {
 
   public function __construct() {
-    parent::__construct(AssumedPaymentsEntity::getEntityName(), 'getFields');
+    parent::__construct(AssumedPayments::getEntityName(), 'getFields');
   }
 
   /**
@@ -24,13 +24,13 @@ class GetFields extends BasicGetFieldsAction {
    * @phpstan-return list<array<string, mixed>>
    */
   protected function getRecords(): array {
-    $all = \Civi\Core\SettingsMetadata::getMetadata();
-
-    $mine = array_filter(
-      $all,
-      fn($k): bool => str_starts_with($k, 'assumed_payments_'),
-      ARRAY_FILTER_USE_KEY
-    );
+    /** @phpstan-var array<string, array{title: string, description: string}> $mine */
+    $mine = \Civi\Api4\Setting::getFields(FALSE)
+      ->addSelect('title', 'description')
+      ->addWhere('name', 'LIKE', 'assumed_payments_%')
+      ->execute()
+      ->indexBy('name')
+      ->getArrayCopy();
 
     return [
       [

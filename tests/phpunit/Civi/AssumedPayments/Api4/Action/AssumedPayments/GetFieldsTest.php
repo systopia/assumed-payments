@@ -13,8 +13,8 @@ use PHPUnit\Framework\TestCase;
 class GetFieldsTest extends TestCase {
 
   public function testGetFields_GetRecords_ReturnsExpectedFields(): void {
-    $result = \Civi\Api4\AssumedPaymentsEntity::getFields()->execute();
-    $this->assertInstanceOf(Result::class, $result);
+    $result = \Civi\Api4\AssumedPayments::getFields()->execute();
+    self::assertInstanceOf(Result::class, $result);
     $fields = array_column($result->getArrayCopy(), 'name');
     self::assertContains('fromDate', $fields);
     self::assertContains('toDate', $fields);

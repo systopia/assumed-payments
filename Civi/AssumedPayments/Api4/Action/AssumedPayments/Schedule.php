@@ -5,7 +5,7 @@ declare(strict_types = 1);
 namespace Civi\AssumedPayments\Api4\Action\AssumedPayments;
 
 use Civi;
-use Civi\Api4\AssumedPaymentsEntity;
+use Civi\Api4\AssumedPayments;
 use Civi\Api4\Generic\AbstractAction;
 use Civi\Api4\Generic\Result;
 use CRM_AssumedPayments_Queue_AssumedPaymentWorker;
@@ -20,7 +20,7 @@ use CRM_AssumedPayments_ExtensionUtil as E;
 class Schedule extends AbstractAction {
 
   public function __construct() {
-    parent::__construct(AssumedPaymentsEntity::getEntityName(), 'schedule');
+    parent::__construct(AssumedPayments::getEntityName(), 'schedule');
   }
 
   // API overrides
@@ -47,10 +47,9 @@ class Schedule extends AbstractAction {
     $to = $this->toDate ?? $settings->get('assumed_payments_to_date');
 
     // Batch Size
-    $batchSize = $this->batchSize ?? $settings->get('assumed_payments_batch_size');
-    if ($batchSize === NULL) {
-      $batchSize = 500;
-    }
+    $batchSize = $this->batchSize
+      ?? $settings->get('assumed_payments_batch_size')
+      ?? \CRM_AssumedPayments_Settings::DEFAULT_BATCH_SIZE;
 
     //Status Ids
     $openStatusIds = $this->openStatusIds;

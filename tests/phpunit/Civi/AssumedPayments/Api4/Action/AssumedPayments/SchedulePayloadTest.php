@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace phpunit\Civi\AssumedPayments\Api4\Action\AssumedPayments;
 
-use Civi\Api4\AssumedPaymentsEntity;
+use Civi\Api4\AssumedPayments;
 use Civi\Test;
 use Civi\Test\CiviEnvBuilder;
 use Civi\Test\HeadlessInterface;
@@ -33,23 +33,23 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
       ]
     );
     $recurId = $bag->toArray()['recurringContributionId'];
-    $this->assertGreaterThan(0, $recurId);
+    self::assertGreaterThan(0, $recurId);
 
-    $action = AssumedPaymentsEntity::schedule();
+    $action = AssumedPayments::schedule();
     $action->setBatchSize(10);
     $action->setFromDate('2000-01-01');
     $action->setToDate('2100-01-01');
 
     $result = $action->execute()->first();
 
-    $this->assertIsArray($result, 'Expected schedule to return one result row');
-    $this->assertSame(self::QUEUE_NAME, $result['queue_name'] ?? NULL);
-    $this->assertIsInt($result['queued'] ?? NULL);
-    $this->assertGreaterThanOrEqual(1, (int) $result['queued'], 'Expected schedule to enqueue at least 1 item');
+    self::assertIsArray($result, 'Expected schedule to return one result row');
+    self::assertSame(self::QUEUE_NAME, $result['queue_name'] ?? NULL);
+    self::assertIsInt($result['queued'] ?? NULL);
+    self::assertGreaterThanOrEqual(1, $result['queued'], 'Expected schedule to enqueue at least 1 item');
 
     $payload = $this->fetchLatestQueuePayload(self::QUEUE_NAME);
 
-    $this->assertInstanceOf(
+    self::assertInstanceOf(
       \CRM_Queue_Task::class,
       $payload,
       'Queue payload must be CRM_Queue_Task so the runner can execute it'
@@ -65,25 +65,25 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
       ]
     );
     $recurId = $bag->toArray()['recurringContributionId'];
-    $this->assertGreaterThan(0, $recurId);
+    self::assertGreaterThan(0, $recurId);
 
-    $action = AssumedPaymentsEntity::schedule();
+    $action = AssumedPayments::schedule();
     $action->setBatchSize(10);
     $action->setFromDate('2000-01-01');
     $action->setToDate('2100-01-01');
 
     $row = $action->execute()->first();
 
-    $this->assertIsArray($row);
-    $this->assertSame(self::QUEUE_NAME, $row['queue_name'] ?? NULL);
-    $this->assertGreaterThanOrEqual(1, (int) ($row['queued'] ?? 0));
+    self::assertIsArray($row);
+    self::assertSame(self::QUEUE_NAME, $row['queue_name'] ?? NULL);
+    self::assertGreaterThanOrEqual(1, (int) ($row['queued'] ?? 0));
 
     $q = \CRM_Queue_Service::singleton()->create([
       'type' => 'Sql',
       'name' => self::QUEUE_NAME,
     ]);
 
-    $this->assertGreaterThanOrEqual(1, $q->numberOfItems(), 'Expected queue to contain items before runner');
+    self::assertGreaterThanOrEqual(1, $q->numberOfItems(), 'Expected queue to contain items before runner');
 
     $runner = new \CRM_Queue_Runner([
       'title' => 'AssumedPayments',
@@ -91,7 +91,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     ]);
     $runner->runAll();
 
-    $this->assertSame(0, $q->numberOfItems(), 'Expected queue to be empty after runner processed tasks');
+    self::assertSame(0, $q->numberOfItems(), 'Expected queue to be empty after runner processed tasks');
   }
 
   public function testSchedule_DoesNotEnqueueRecur_WhenCompletedContributionExistsInRange(): void {
@@ -106,7 +106,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     $recurId = $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $action = AssumedPaymentsEntity::schedule();
+    $action = AssumedPayments::schedule();
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
@@ -129,7 +129,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     $recurId = $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $action = AssumedPaymentsEntity::schedule();
+    $action = AssumedPayments::schedule();
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
@@ -165,7 +165,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     ]);
     self::assertGreaterThan(0, $cancelledId);
 
-    $action = AssumedPaymentsEntity::schedule();
+    $action = AssumedPayments::schedule();
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
@@ -205,7 +205,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     $recurId = (int) $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $action = AssumedPaymentsEntity::schedule();
+    $action = AssumedPayments::schedule();
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
@@ -232,7 +232,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     $recurId = (int) $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $action = AssumedPaymentsEntity::schedule();
+    $action = AssumedPayments::schedule();
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
@@ -259,7 +259,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     $recurId = (int) $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $action = AssumedPaymentsEntity::schedule();
+    $action = AssumedPayments::schedule();
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
@@ -286,7 +286,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     $recurId = (int) $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $action = AssumedPaymentsEntity::schedule();
+    $action = AssumedPayments::schedule();
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
@@ -313,7 +313,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     self::assertGreaterThan(0, $recurId);
 
     // allow only the other FT -> should filter it out
-    $action = AssumedPaymentsEntity::schedule();
+    $action = AssumedPayments::schedule();
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
@@ -347,15 +347,16 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
    * @throws \Civi\Core\Exception\DBQueryException
    */
   private function fetchLatestQueuePayload(string $queueName) {
+    /** @phpstan-var \CRM_Core_DAO $dao */
     $dao = \CRM_Core_DAO::executeQuery(
       'SELECT data FROM civicrm_queue_item WHERE queue_name = %1 ORDER BY id DESC LIMIT 1',
       [1 => [$queueName, 'String']]
     );
 
-    $this->assertTrue($dao->fetch(), 'Expected at least one queue item');
+    self::assertTrue($dao->fetch(), 'Expected at least one queue item');
 
     $payload = unserialize((string) $dao->data);
-    $this->assertNotFalse($payload, 'Expected queue item payload to be unserializable');
+    self::assertNotFalse($payload, 'Expected queue item payload to be unserializable');
 
     return $payload;
   }

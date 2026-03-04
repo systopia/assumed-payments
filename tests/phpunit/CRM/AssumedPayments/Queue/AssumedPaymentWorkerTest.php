@@ -131,16 +131,16 @@ final class AssumedPaymentWorkerTest extends TestCase implements HeadlessInterfa
     $contribBefore = $this->countContributionsForRecur($recurId);
 
     $result = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => $recurId]);
-    $this->assertTrue($result);
+    self::assertTrue($result);
 
     $contribAfter = $this->countContributionsForRecur($recurId);
-    $this->assertSame($contribBefore + 1, $contribAfter, 'Worker must create a new pending contribution instance');
+    self::assertSame($contribBefore + 1, $contribAfter, 'Worker must create a new pending contribution instance');
 
     $contributionId = $this->getLatestContributionIdForRecur($recurId);
-    $this->assertGreaterThan(0, $contributionId);
+    self::assertGreaterThan(0, $contributionId);
 
-    $this->assertSame(1, $this->countFinancialTrxnsForContribution($contributionId));
-    $this->assertTrue($this->assumedFlagExistsForContribution($contributionId));
+    self::assertSame(1, $this->countFinancialTrxnsForContribution($contributionId));
+    self::assertTrue($this->assumedFlagExistsForContribution($contributionId));
   }
 
   public function testRun_WithCancelledState_SetsContributionToCancelled(): void {
@@ -212,7 +212,9 @@ final class AssumedPaymentWorkerTest extends TestCase implements HeadlessInterfa
     ];
 
     $queue = new CRM_Queue_Queue_Sql($spec);
-    return new CRM_Queue_TaskContext($queue);
+    $ctx = new CRM_Queue_TaskContext();
+    $ctx->queue = $queue;
+    return $ctx;
   }
 
   private function getLatestContributionIdForRecur(int $recurId): int {
