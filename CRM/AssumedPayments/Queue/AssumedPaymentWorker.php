@@ -330,19 +330,14 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
       $settings = Civi::settings();
       $finalContributionState = $settings->get('assumed_payments_final_contribution_state');
 
-      if ($finalContributionState !== NULL) {
-
-        //Default Behavior is marked as "0" and therefore returns early.
-        if ($finalContributionState === 0) {
-          return;
-        }
-
+      //Only modify the contribution if there is an actual chosen "non default" value
+      if ($finalContributionState !== NULL && $finalContributionState !== 0) {
         \Civi\Api4\Contribution::update(FALSE)
           ->addValue('contribution_status_id', $finalContributionState)
           ->addWhere('id', '=', $contributionId)
           ->execute();
       }
-
+      return;
     }
     //@codeCoverageIgnoreStart
     catch (CRM_Core_Exception $e) {
