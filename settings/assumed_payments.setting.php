@@ -7,6 +7,7 @@ use CRM_AssumedPayments_ExtensionUtil as E;
 return [
 
   'assumed_payments_payment_instrument_ids' => [
+    'name' => 'assumed_payments_payment_instrument_ids',
     'group_name' => 'AssumedPayments Settings',
     'type' => 'Array',
     'html_type' => 'checkboxes',
@@ -22,6 +23,7 @@ return [
   ],
 
   'assumed_payments_financial_type_ids' => [
+    'name' => 'assumed_payments_financial_type_ids',
     'group_name' => 'AssumedPayments Settings',
     'type' => 'Array',
     'html_type' => 'checkboxes',
@@ -37,6 +39,7 @@ return [
   ],
 
   'assumed_payments_from_date' => [
+    'name' => 'assumed_payments_from_date',
     'group_name' => 'AssumedPayments Settings',
     'type' => 'String',
     'html_type' => 'datepicker',
@@ -47,6 +50,7 @@ return [
   ],
 
   'assumed_payments_to_date' => [
+    'name' => 'assumed_payments_to_date',
     'group_name' => 'AssumedPayments Settings',
     'type' => 'String',
     'html_type' => 'datepicker',
@@ -57,6 +61,7 @@ return [
   ],
 
   'assumed_payments_contribution_status_ids' => [
+    'name' => 'assumed_payments_contribution_status_ids',
     'group_name' => 'AssumedPayments Settings',
     'type' => 'Array',
     'html_type' => 'checkboxes',
@@ -72,6 +77,7 @@ return [
   ],
 
   'assumed_payments_batch_size' => [
+    'name' => 'assumed_payments_batch_size',
     'group_name' => 'AssumedPayments Settings',
     'type' => 'Integer',
     'html_type' => 'text',
@@ -83,6 +89,7 @@ return [
   ],
 
   'assumed_payments_final_contribution_state' => [
+    'name' => 'assumed_payments_final_contribution_state',
     'group_name' => 'AssumedPayments Settings',
     'type' => 'Array',
     'html_type' => 'select',

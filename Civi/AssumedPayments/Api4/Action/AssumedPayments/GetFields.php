@@ -26,7 +26,7 @@ class GetFields extends BasicGetFieldsAction {
   protected function getRecords(): array {
     /** @phpstan-var array<string, array{title: string, description: string}> $mine */
     $mine = \Civi\Api4\Setting::getFields(FALSE)
-      ->addSelect('title', 'description')
+      ->addSelect('name', 'title', 'description')
       ->addWhere('name', 'LIKE', 'assumed_payments_%')
       ->execute()
       ->indexBy('name')
