@@ -96,9 +96,14 @@ final class RunJobTest extends TestCase implements HeadlessInterface, Transactio
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
-    $action->setOpenStatusIds(json_encode([1]));
-    $action->setFinancialTypeIds(json_encode([1]));
-    $action->setPaymentInstrumentIds(json_encode([1]));
+
+    /** @var string $jsonStatus */
+    $jsonStatus = json_encode([1]);
+    $jsonTypes = json_encode([1]);
+    $jsonInstruments = json_encode([1]);
+    $action->setOpenStatusIds($jsonStatus);
+    $action->setFinancialTypeIds($jsonTypes);
+    $action->setPaymentInstrumentIds($jsonInstruments);
 
     $result = $action->execute();
     self::assertCount(1, $result);
