@@ -7,7 +7,7 @@
   ],
   "require": {
     "symfony/phpunit-bridge": "^7",
-    "systopia/civicrm-test-fixtures": "0.1.0"
+    "systopia/civicrm-test-fixtures": "dev-main"
   },
   "scripts": {
     "post-install-cmd": [
