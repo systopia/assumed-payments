@@ -27,8 +27,18 @@ class Schedule extends AbstractAction {
   protected ?string $fromDate = NULL;
   protected ?string $toDate = NULL;
   protected ?int $batchSize = NULL;
-  protected ?bool $dryRun = NULL;
+  /**
+   * @phpstan-var list<int>|null
+   */
   protected ?array $openStatusIds = NULL;
+  /**
+   * @phpstan-var list<int>|null
+   */
+  protected ?array $paymentInstrumentIds = NULL;
+  /**
+   * @phpstan-var list<int>|null
+   */
+  protected ?array $financialTypeIds = NULL;
 
   /**
    * Schedules recurring contributions for assumed payment processing.
@@ -39,67 +49,126 @@ class Schedule extends AbstractAction {
    * @throws \CRM_Core_Exception
    */
   public function _run(Result $result): void {
+
+    // Resolve parameters API override > settings
     $settings = Civi::settings();
 
-    // Resolve date range: API override > settings
-    $from = $this->fromDate ?? $settings->get('assumed_payments_from_date');
-    $to = $this->toDate ?? $settings->get('assumed_payments_to_date');
+    /** @var string|null $fromSetting */
+    $fromSetting = $settings->get('assumed_payments_from_date');
+    $from = $this->fromDate ?? $fromSetting;
+
+    /** @var string|null $toSetting */
+    $toSetting = $settings->get('assumed_payments_to_date');
+    $to = $this->toDate ?? $toSetting;
 
     // Batch Size
-    $batchSize = $this->batchSize ?? $settings->get('assumed_payments_batch_size');
-
-    // Dry run
-    $isDryRun = $this->dryRun;
-    if ($isDryRun === NULL) {
-      $isDryRun = $settings->get('assumed_payments_dry_run_default') ?? FALSE;
-    }
+    /** @var int|null $batchSettings */
+    $batchSettings = $settings->get('assumed_payments_batch_size');
+    $batchSize = $this->batchSize
+      ?? $batchSettings
+      ?? \CRM_AssumedPayments_Settings::DEFAULT_BATCH_SIZE;
 
     //Status Ids
-    $openStatusIds = $this->openStatusIds;
-    if ($openStatusIds === NULL) {
-      $openStatusIds = $settings->get('assumed_payments_contribution_status_ids') ?? [];
-    }
-    $openStatusIds = array_values(
-      array_map('intval', $openStatusIds)
+    $openStatusIds = $this->resolveIntList(
+      $this->openStatusIds,
+      'assumed_payments_contribution_status_ids'
+    );
+    $paymentInstrumentIds = $this->resolveIntList(
+      $this->paymentInstrumentIds,
+      'assumed_payments_payment_instrument_ids'
+    );
+    $financialTypeIds = $this->resolveIntList(
+      $this->financialTypeIds,
+      'assumed_payments_financial_type_ids'
     );
 
     // Find relevant recur IDs (DB-side) based on missing contribution in range OR open contribution status in range
-    $ids = $this->findRelevantRecurIds($from, $to, $openStatusIds, $batchSize);
+    $ids = $this->findRelevantRecurIds(
+      $from,
+      $to,
+      $openStatusIds,
+      $paymentInstrumentIds,
+      $financialTypeIds,
+      $batchSize
+    );
 
     // Create queue
     $queue = \CRM_Queue_Service::singleton()->create([
       'type' => 'Sql',
-      'name' => E::SHORT_NAME . '_schedule',
+      'name' => E::LONG_NAME . '_schedule',
       'reset' => TRUE,
     ]);
 
+    $queued = $this->enqueueRecurIds($queue, $ids);
+
+    // Result summary
+    $result[] = [
+      'from_date' => $from,
+      'to_date' => $to,
+      'recur_ids' => array_values($ids),
+      'count' => count($ids),
+      'queue_name' => E::LONG_NAME . '_schedule',
+      'queued' => $queued,
+    ];
+  }
+
+  /**
+   * @phpstan-param ?list<int> $list
+   * @return array<int>
+   * @phpstan-return list<int>
+   */
+  private function resolveIntList(?array $list, string $settingsKey): array {
+    $settings = Civi::settings();
+
+    $workList = $list;
+    if ($workList === NULL) {
+      /** @var string|null $setting */
+      $setting = $settings->get($settingsKey);
+
+      if ($setting !== NULL) {
+        $workList = \CRM_Utils_Array::explodePadded($setting);
+      }
+    }
+
+    if ($workList === NULL) {
+      return [];
+    }
+
+    $ids = [];
+    foreach ($workList as $v) {
+      if (is_int($v)) {
+        $ids[] = $v;
+      }
+      elseif (is_numeric($v)) {
+        $ids[] = (int) $v;
+      }
+    }
+    return array_values(array_unique(array_filter($ids, static fn(int $x): bool => $x > 0)));
+  }
+
+  /**
+   * @param \CRM_Queue_Queue $queue
+   * @param iterable<int> $ids
+   */
+  private function enqueueRecurIds($queue, iterable $ids): int {
     $queued = 0;
+
     foreach ($ids as $recurId) {
       $queue->createItem(
         new \CRM_Queue_Task(
           CRM_AssumedPayments_Queue_AssumedPaymentWorker::class . '::run',
           [
             [
-              'recur_id' => $recurId,
-              'dry_run' => $isDryRun,
+              'recur_id' => (int) $recurId,
             ],
           ],
-          'AssumedPayments recur_id=' . $recurId
+          'AssumedPayments recur_id=' . (int) $recurId
         )
       );
       $queued++;
     }
 
-    // Result summary
-    $result[] = [
-      'dryRun' => $isDryRun,
-      'from_date' => $from,
-      'to_date' => $to,
-      'recur_ids' => array_values($ids),
-      'count' => count($ids),
-      'queue_name' => E::SHOR_NAME . '_schedule',
-      'queued' => $queued,
-    ];
+    return $queued;
   }
 
   /**
@@ -111,11 +180,20 @@ class Schedule extends AbstractAction {
    *
    * @param string|null $from
    * @param string|null $to
-   * @param list<int> $openStatusIds
-   * @return list<int>
+   * @phpstan-param list<int> $openStatusIds
+   * @phpstan-param list<int> $paymentInstrumentIds
+   * @phpstan-param list<int> $financialTypeIds
+   * @return array<int>
    * @throws Civi\Core\Exception\DBQueryException
    */
-  private function findRelevantRecurIds(?string $from, ?string $to, array $openStatusIds, int $batchSize): array {
+  private function findRelevantRecurIds(
+    ?string $from,
+    ?string $to,
+    array $openStatusIds,
+    array $paymentInstrumentIds,
+    array $financialTypeIds,
+    int $batchSize
+  ): array {
     if (in_array($from, [NULL, '', '0'], TRUE) || in_array($to, [NULL, '', '0'], TRUE)) {
       return [];
     }
@@ -125,7 +203,7 @@ class Schedule extends AbstractAction {
       2 => [$to, 'String'],
     ];
 
-    // Generate the list of statuses
+    // Contribution Status IN
     $inParts = [];
     $idx = 3;
     foreach ($openStatusIds as $sid) {
@@ -135,6 +213,30 @@ class Schedule extends AbstractAction {
     }
     // empty => no open-status match possible
     $inSql = $inParts !== [] ? implode(',', $inParts) : 'NULL';
+
+    // PaymentInstrument IN
+    $piParts = [];
+    $piSql = '1=1';
+    if ($paymentInstrumentIds !== []) {
+      foreach ($paymentInstrumentIds as $pid) {
+        $piParts[] = '%' . $idx;
+        $params[$idx] = [(int) $pid, 'Integer'];
+        $idx++;
+      }
+      $piSql = 'recur.payment_instrument_id IN (' . implode(',', $piParts) . ')';
+    }
+
+    // FinancialType IN
+    $ftParts = [];
+    $ftSql = '1=1';
+    if ($financialTypeIds !== []) {
+      foreach ($financialTypeIds as $fid) {
+        $ftParts[] = '%' . $idx;
+        $params[$idx] = [(int) $fid, 'Integer'];
+        $idx++;
+      }
+      $ftSql = 'recur.financial_type_id IN (' . implode(',', $ftParts) . ')';
+    }
 
     // Generate the Limit Parameter
     $limitSql = '';
@@ -163,6 +265,10 @@ class Schedule extends AbstractAction {
       ) contrib
         ON contrib.contribution_recur_id = recur.id
       WHERE recur.is_test = 0
+        -- And Payment Instrument IN ...
+        AND ( ' . $piSql . ' )
+        -- AND Financial Type IN ...
+        AND ( ' . $ftSql . ' )
         -- Next scheduled contribution must fall within the given date range
         AND recur.next_sched_contribution_date IS NOT NULL
         AND recur.next_sched_contribution_date >= %1
@@ -206,12 +312,25 @@ class Schedule extends AbstractAction {
     $this->batchSize = $value;
   }
 
-  public function setDryRun(?bool $value): void {
-    $this->dryRun = $value;
-  }
-
+  /**
+   * @phpstan-param list<int>|null $value
+   */
   public function setOpenStatusIds(?array $value): void {
     $this->openStatusIds = $value;
+  }
+
+  /**
+   * @phpstan-param list<int>|null $value
+   */
+  public function setPaymentInstrumentIds(?array $value): void {
+    $this->paymentInstrumentIds = $value;
+  }
+
+  /**
+   * @phpstan-param list<int>|null $value
+   */
+  public function setFinancialTypeIds(?array $value): void {
+    $this->financialTypeIds = $value;
   }
 
 }

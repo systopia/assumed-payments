@@ -2,9 +2,15 @@
 
 declare(strict_types = 1);
 
+namespace phpunit\Civi\AssumedPayments\CRM\AssumedPayments\Queue;
+
 use Civi\Test;
 use Civi\Test\CiviEnvBuilder;
 use Civi\Test\HeadlessInterface;
+use Civi\Test\TransactionalInterface;
+use CRM_AssumedPayments_Queue_AssumedPaymentWorker;
+use CRM_Queue_Queue_Sql;
+use CRM_Queue_TaskContext;
 use PHPUnit\Framework\TestCase;
 use Systopia\TestFixtures\Fixtures\Scenarios\ContributionRecurScenario;
 
@@ -12,64 +18,51 @@ use Systopia\TestFixtures\Fixtures\Scenarios\ContributionRecurScenario;
  * @covers CRM_AssumedPayments_Queue_AssumedPaymentWorker
  * @group headless
  */
-final class CRM_AssumedPayments_Queue_AssumedPaymentWorkerTest extends TestCase implements HeadlessInterface {
+final class AssumedPaymentWorkerTest extends TestCase implements HeadlessInterface, TransactionalInterface {
 
-  private ?\CRM_Core_Transaction $tx = NULL;
-
-  /**
-   * {@inheritDoc}
-   */
   public function setUpHeadless(): CiviEnvBuilder {
-    return Test::headless()
-      ->installMe(__DIR__)
-      ->apply();
+    return Test::headless()->installMe(__DIR__)->apply();
   }
 
-  protected function setUp(): void {
-    parent::setUp();
-    $this->tx = new \CRM_Core_Transaction();
-  }
-
-  protected function tearDown(): void {
-    if ($this->tx !== NULL) {
-      $this->tx->rollback();
-      $this->tx = NULL;
-    }
-    parent::tearDown();
+  protected function tearDownHeadless(): void {
+    \Civi::settings()->set(
+      'assumed_payments_final_contribution_state',
+      NULL
+    );
   }
 
   public function testRun_WithoutRecurId_ReturnsFalse(): void {
     $ctx = $this->createQueueContext();
     $result = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, []);
-    $this->assertFalse($result);
+    self::assertFalse($result);
   }
 
   public function testRun_WithInvalidRecurId_ReturnsFalse(): void {
     $ctx = $this->createQueueContext();
-    $result = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => 0]);
-    $this->assertFalse($result);
-    $result = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => -5]);
-    $this->assertFalse($result);
-    $result = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => 999999999]);
-    $this->assertFalse($result);
+
+    self::assertFalse(CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => 0]));
+    self::assertFalse(CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => -5]));
+    self::assertFalse(CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => 999999999]));
   }
 
   public function testRun_WithValidRecurIdAndWithContribution_ReturnsTrue(): void {
     $ctx = $this->createQueueContext();
     $bag = ContributionRecurScenario::pendingRecurWithPendingContribution();
-    $recurId = $bag->toArray()['recurringContributionId'];
-    $this->assertGreaterThan(0, $recurId, 'Fixture must provide a valid ContributionRecur id');
+    $recurId = (int) $bag->toArray()['recurringContributionId'];
+    self::assertGreaterThan(0, $recurId);
+
     $result = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => $recurId]);
-    $this->assertTrue($result);
+    self::assertTrue($result);
   }
 
   public function testRun_WithValidRecurId_ReturnsTrue(): void {
     $ctx = $this->createQueueContext();
     $bag = ContributionRecurScenario::pendingRecurWithoutContribution();
-    $recurId = $bag->toArray()['recurringContributionId'];
-    $this->assertGreaterThan(0, $recurId, 'Fixture must provide a valid ContributionRecur id');
+    $recurId = (int) $bag->toArray()['recurringContributionId'];
+    self::assertGreaterThan(0, $recurId);
+
     $result = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => $recurId]);
-    $this->assertTrue($result);
+    self::assertTrue($result);
   }
 
   public function testRun_CreatesPayment_AndFlagsFinancialTrxn(): void {
@@ -77,36 +70,33 @@ final class CRM_AssumedPayments_Queue_AssumedPaymentWorkerTest extends TestCase 
     $bag = ContributionRecurScenario::pendingRecurWithPendingContribution();
     $recurId = (int) $bag->toArray()['recurringContributionId'];
 
-    $contributionId = $this->getLatestPendingContributionId($recurId);
-    $this->assertGreaterThan(0, $contributionId);
+    $contributionId = $this->getLatestContributionIdForRecur($recurId);
+    self::assertGreaterThan(0, $contributionId);
 
-    $paymentsBefore = $this->countFinancialTrxnsForContribution($contributionId);
+    $assumedBefore = $this->countAssumedFinancialTrxnsForContribution($contributionId);
 
     $result = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => $recurId]);
     if (!$result) {
-      fwrite(STDERR, "\nWorker failed: " . json_encode(CRM_AssumedPayments_Queue_AssumedPaymentWorker::$lastFail) . "\n");
+      fwrite(
+        STDERR,
+        "\nWorker failed: " . json_encode(CRM_AssumedPayments_Queue_AssumedPaymentWorker::$lastFail) . "\n"
+      );
     }
-    $this->assertTrue($result);
+    self::assertTrue($result);
 
-    // Payment wurde genau einmal hinzugefügt
-    $paymentsAfter = $this->countFinancialTrxnsForContribution($contributionId);
-    $this->assertSame($paymentsBefore + 1, $paymentsAfter);
+    $assumedAfter = $this->countAssumedFinancialTrxnsForContribution($contributionId);
+    self::assertSame(
+      $assumedBefore + 1,
+      $assumedAfter,
+      'Worker must create exactly one assumed payment flag for this contribution'
+    );
 
-    // Flag wurde gesetzt (über eure Produktiv-Idempotenz-Logik)
-    $this->assertTrue($this->assumedFlagExistsForContribution($contributionId));
+    self::assertGreaterThan(0, $this->countFinancialTrxnsForContribution($contributionId));
 
-    $row = civicrm_api3('Contribution', 'getsingle', [
-      'id' => $contributionId,
-      'return' => ['contribution_status_id'],
-    ]);
+    self::assertTrue($this->assumedFlagExistsForContribution($contributionId));
 
-    $label = (string) civicrm_api3('OptionValue', 'getvalue', [
-      'option_group_id' => 'contribution_status',
-      'value' => $row['contribution_status_id'],
-      'return' => 'name',
-    ]);
-
-    $this->assertSame('Completed', $label);
+    $statusName = $this->getContributionStatusName($contributionId);
+    self::assertSame('Completed', $statusName);
   }
 
   public function testRun_IsIdempotent_DoesNotCreateSecondPayment(): void {
@@ -114,20 +104,23 @@ final class CRM_AssumedPayments_Queue_AssumedPaymentWorkerTest extends TestCase 
     $bag = ContributionRecurScenario::pendingRecurWithPendingContribution();
     $recurId = (int) $bag->toArray()['recurringContributionId'];
 
-    $contributionId = $this->getLatestPendingContributionId($recurId);
-    $this->assertGreaterThan(0, $contributionId);
+    $contributionId = $this->getLatestContributionIdForRecur($recurId);
+    self::assertGreaterThan(0, $contributionId);
 
     $result1 = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => $recurId]);
-    $this->assertTrue($result1);
+    self::assertTrue($result1);
 
-    $paymentsAfterFirst = $this->countFinancialTrxnsForContribution($contributionId);
-    $this->assertGreaterThan(0, $paymentsAfterFirst);
+    $assumedAfterFirst = $this->countAssumedFinancialTrxnsForContribution($contributionId);
+    self::assertGreaterThan(0, $assumedAfterFirst, 'First run must create an assumed-flagged financial trxn');
 
-    $result2 = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => $recurId]);
-    $this->assertTrue($result2);
+    CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => $recurId]);
 
-    $paymentsAfterSecond = $this->countFinancialTrxnsForContribution($contributionId);
-    $this->assertSame($paymentsAfterFirst, $paymentsAfterSecond, 'Second run must not create another payment');
+    $assumedAfterSecond = $this->countAssumedFinancialTrxnsForContribution($contributionId);
+    self::assertSame(
+      $assumedAfterFirst,
+      $assumedAfterSecond,
+      'Second run must not create another assumed-flagged financial trxn'
+    );
   }
 
   public function testRun_WithoutExistingContribution_CreatesContributionAndPayment(): void {
@@ -138,24 +131,80 @@ final class CRM_AssumedPayments_Queue_AssumedPaymentWorkerTest extends TestCase 
     $contribBefore = $this->countContributionsForRecur($recurId);
 
     $result = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, ['recur_id' => $recurId]);
-    $this->assertTrue($result);
+    self::assertTrue($result);
 
     $contribAfter = $this->countContributionsForRecur($recurId);
-    $this->assertSame($contribBefore + 1, $contribAfter, 'Worker must create a new pending contribution instance');
+    self::assertSame($contribBefore + 1, $contribAfter, 'Worker must create a new pending contribution instance');
 
     $contributionId = $this->getLatestContributionIdForRecur($recurId);
-    $this->assertGreaterThan(0, $contributionId);
+    self::assertGreaterThan(0, $contributionId);
 
-    $this->assertSame(1, $this->countFinancialTrxnsForContribution($contributionId));
-    $this->assertTrue($this->assumedFlagExistsForContribution($contributionId));
+    self::assertSame(1, $this->countFinancialTrxnsForContribution($contributionId));
+    self::assertTrue($this->assumedFlagExistsForContribution($contributionId));
+  }
+
+  public function testRun_WithCancelledState_SetsContributionToCancelled(): void {
+    $ctx = $this->createQueueContext();
+
+    \Civi::settings()->set(
+      'assumed_payments_final_contribution_state',
+      3
+    );
+
+    $bag = ContributionRecurScenario::pendingRecurWithCancelledContribution();
+    /** @var int $recurId */
+    $recurId = $bag->toArray()['recurringContributionId'];
+
+    $contributionId = $this->getLatestContributionIdForRecur($recurId);
+    self::assertGreaterThan(0, $contributionId);
+
+    $result = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, [
+      'recur_id' => $recurId,
+    ]);
+
+    self::assertTrue($result);
+
+    $statusName = $this->getContributionStatusName($contributionId);
+
+    self::assertSame(
+      'Cancelled',
+      $statusName,
+      'Contribution must be set to the configured final state'
+    );
+  }
+
+  public function testRun_WithCalculatedDefaultState_SetsContributionToCompleted(): void {
+    $ctx = $this->createQueueContext();
+
+    \Civi::settings()->set(
+      'assumed_payments_final_contribution_state',
+      0
+    );
+
+    $bag = ContributionRecurScenario::pendingRecurWithCancelledContribution();
+    /** @var int $recurId */
+    $recurId = $bag->toArray()['recurringContributionId'];
+
+    $contributionId = $this->getLatestContributionIdForRecur($recurId);
+    self::assertGreaterThan(0, $contributionId);
+
+    $result = CRM_AssumedPayments_Queue_AssumedPaymentWorker::run($ctx, [
+      'recur_id' => $recurId,
+    ]);
+
+    self::assertTrue($result);
+
+    $statusName = $this->getContributionStatusName($contributionId);
+
+    self::assertSame(
+      'Completed',
+      $statusName,
+      'Contribution must be set to the configured final state'
+    );
   }
 
   /**
    * ---- HELPERS
-   */
-
-  /**
-   * @return CRM_Queue_TaskContext
    */
   private function createQueueContext(): CRM_Queue_TaskContext {
     $spec = [
@@ -165,107 +214,111 @@ final class CRM_AssumedPayments_Queue_AssumedPaymentWorkerTest extends TestCase 
     ];
 
     $queue = new CRM_Queue_Queue_Sql($spec);
-
-    return new CRM_Queue_TaskContext($queue);
-  }
-
-  private function getLatestPendingContributionId(int $recurId): int {
-    try {
-      return (int) civicrm_api3('Contribution', 'getvalue', [
-        'contribution_recur_id' => $recurId,
-        'contribution_status_id' => 'PENDING',
-        'return' => 'id',
-        'options' => ['sort' => 'id DESC'],
-      ]);
-    }
-    catch (\CRM_Core_Exception $e) {
-      return 0;
-    }
-  }
-
-  private function getLatestContributionIdForRecur(int $recurId): int {
-    try {
-      return (int) civicrm_api3('Contribution', 'getvalue', [
-        'contribution_recur_id' => $recurId,
-        'return' => 'id',
-        'options' => ['sort' => 'id DESC'],
-      ]);
-    }
-    catch (\CRM_Core_Exception $e) {
-      return 0;
-    }
-  }
-
-  private function countContributionsForRecur(int $recurId): int {
-    $res = civicrm_api3('Contribution', 'getcount', [
-      'contribution_recur_id' => $recurId,
-    ]);
-    return (int) $res;
-  }
-
-  private function countFinancialTrxnsForContribution(int $contributionId): int {
-    $eft = civicrm_api3('EntityFinancialTrxn', 'get', [
-      'entity_table' => 'civicrm_contribution',
-      'entity_id' => $contributionId,
-      'return' => ['financial_trxn_id'],
-      'options' => ['limit' => 0],
-    ]);
-
-    if (empty($eft['values']) || !is_array($eft['values'])) {
-      return 0;
-    }
-
-    $ids = array_unique(array_filter(array_map(
-      static fn($v) => (int) ($v['financial_trxn_id'] ?? 0),
-      $eft['values']
-    )));
-
-    return count($ids);
+    $ctx = new CRM_Queue_TaskContext();
+    $ctx->queue = $queue;
+    return $ctx;
   }
 
   /**
-   * Prüft, ob irgendeine FinancialTrxn, die an der Contribution hängt,
-   * das assumed flag trägt.
+   * @param iterable<mixed> $rows
+   * @return array<int>
    */
+  private function extractFinancialTrxnIds(iterable $rows): array {
+    $ids = [];
+    foreach ($rows as $r) {
+      /** @var array<string,mixed> $r */
+      $id = $r['financial_trxn_id'] ?? 0;
+      $ids[] = is_numeric($id) ? (int) $id : 0;
+    }
+    return array_values(
+      array_unique(
+        array_filter(
+          $ids,
+          static fn(int $v): bool => $v !== 0
+        )
+      )
+    );
+  }
+
+  private function getLatestContributionIdForRecur(int $recurId): int {
+    $row = \Civi\Api4\Contribution::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('contribution_recur_id', '=', $recurId)
+      ->addOrderBy('id', 'DESC')
+      ->setLimit(1)
+      ->execute()
+      ->first();
+
+    return (int) ($row['id'] ?? 0);
+  }
+
+  private function countAssumedFinancialTrxnsForContribution(int $contributionId): int {
+    $rows = \Civi\Api4\EntityFinancialTrxn::get(FALSE)
+      ->addSelect('financial_trxn_id')
+      ->addWhere('entity_table', '=', 'civicrm_contribution')
+      ->addWhere('entity_id', '=', $contributionId)
+      ->addWhere('financial_trxn_id.assumed_payments_financialtrxn.is_assumed', '=', TRUE)
+      ->setLimit(0)
+      ->execute();
+
+    $ids = $this->extractFinancialTrxnIds($rows);
+    return count($ids);
+  }
+
+  private function countContributionsForRecur(int $recurId): int {
+    return \Civi\Api4\Contribution::get(FALSE)
+      ->addWhere('contribution_recur_id', '=', $recurId)
+      ->execute()
+      ->count();
+  }
+
+  private function countFinancialTrxnsForContribution(int $contributionId): int {
+    $rows = \Civi\Api4\EntityFinancialTrxn::get(FALSE)
+      ->addSelect('financial_trxn_id')
+      ->addWhere('entity_table', '=', 'civicrm_contribution')
+      ->addWhere('entity_id', '=', $contributionId)
+      ->addWhere('financial_trxn_id.assumed_payments_financialtrxn.is_assumed', '=', TRUE)
+      ->setLimit(0)
+      ->execute();
+
+    $ids = $this->extractFinancialTrxnIds($rows);
+    return count($ids);
+  }
+
   private function assumedFlagExistsForContribution(int $contributionId): bool {
-    $groupId = (int) civicrm_api3('CustomGroup', 'getvalue', [
-      'name' => 'assumed_payments_financialtrxn',
-      'return' => 'id',
-    ]);
+    $rows = \Civi\Api4\EntityFinancialTrxn::get(FALSE)
+      ->addSelect('financial_trxn_id')
+      ->addWhere('entity_table', '=', 'civicrm_contribution')
+      ->addWhere('entity_id', '=', $contributionId)
+      ->addWhere('financial_trxn_id.assumed_payments_financialtrxn.is_assumed', '=', TRUE)
+      ->setLimit(0)
+      ->execute();
 
-    $fieldId = (int) civicrm_api3('CustomField', 'getvalue', [
-      'custom_group_id' => $groupId,
-      'name' => 'is_assumed',
-      'return' => 'id',
-    ]);
-    $customKey = 'custom_' . $fieldId;
-
-    $eft = civicrm_api3('EntityFinancialTrxn', 'get', [
-      'entity_table' => 'civicrm_contribution',
-      'entity_id' => $contributionId,
-      'return' => ['financial_trxn_id'],
-      'options' => ['limit' => 0],
-    ]);
-
-    if (empty($eft['values'])) {
+    $ids = $this->extractFinancialTrxnIds($rows);
+    if ($ids === []) {
       return FALSE;
     }
 
-    $trxnIds = array_unique(array_filter(array_map(
-      static fn($v) => (int) ($v['financial_trxn_id'] ?? 0),
-      $eft['values']
-    )));
+    $found = \Civi\Api4\FinancialTrxn::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('id', 'IN', $ids)
+      ->addWhere('assumed_payments_financialtrxn.is_assumed', '=', TRUE)
+      ->setLimit(1)
+      ->execute()
+      ->first();
 
-    if (!$trxnIds) {
-      return FALSE;
-    }
+    return ($found !== NULL);
+  }
 
-    $found = civicrm_api3('FinancialTrxn', 'getcount', [
-      'id' => ['IN' => $trxnIds],
-      $customKey => 1,
-    ]);
+  private function getContributionStatusName(int $contributionId): string {
+    $row = \Civi\Api4\Contribution::get(FALSE)
+      ->addSelect('contribution_status_id:name')
+      ->addWhere('id', '=', $contributionId)
+      ->setLimit(1)
+      ->execute()
+      ->single();
 
-    return ((int) $found) > 0;
+    return (string) ($row['contribution_status_id:name'] ?? '');
   }
 
 }
