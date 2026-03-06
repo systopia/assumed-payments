@@ -2,7 +2,7 @@
     "repositories": [
         {
             "type": "git",
-            "url": "https://github.com/systopia/test-fixtures.git"
+            "url": "https://github.com/systopia/civicrm-test-fixtures.git"
         }
     ],
     "require": {
@@ -15,7 +15,7 @@
         "phpstan/phpstan-strict-rules": "^2",
         "phpstan/phpstan-webmozart-assert": "^2",
         "voku/phpstan-rules": "^3.6",
-        "systopia/test-fixtures": "dev-main"
+        "systopia/civicrm-test-fixtures": "0.1.0"
     },
     "config": {
         "allow-plugins": {
