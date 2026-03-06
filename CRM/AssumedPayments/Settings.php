@@ -23,6 +23,8 @@ class CRM_AssumedPayments_Settings {
 
   /**
    * Defines the valid contribution status ids for the final state
+   *
+   * @return array<int, string>
    */
   public static function contributionFinalStatusOptions(): array {
     $array = self::contributionStatusOptionsFull();
@@ -36,6 +38,8 @@ class CRM_AssumedPayments_Settings {
 
   /**
    * Defines the valid full range of contribution status ids for the final state
+   *
+   * @return array<int, string>
    */
   public static function contributionStatusOptionsFull(): array {
     return CRM_Core_OptionGroup::values('contribution_status');
@@ -43,6 +47,8 @@ class CRM_AssumedPayments_Settings {
 
   /**
    * Defines the valid payment ids for the form
+   *
+   * @return array<int, string>
    */
   public static function paymentInstrumentOptions(): array {
     return CRM_Core_OptionGroup::values('payment_instrument');
@@ -50,6 +56,8 @@ class CRM_AssumedPayments_Settings {
 
   /**
    * Defines the valid financial type ids for the form
+   *
+   * @return array<int, string>
    */
   public static function financialTypeOptions(): array {
     return CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes();

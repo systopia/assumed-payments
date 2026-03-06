@@ -34,19 +34,18 @@ final class AssumedPaymentsScheduleTest extends TestCase implements HeadlessInte
 
     $recurId = (int) $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
-
     $res = civicrm_api3('Job', 'assumed_payments_schedule', [
       'fromDate' => '2025-02-01',
       'toDate' => '2025-02-28',
       'batchSize' => 10,
     ]);
 
-    self::assertSame(0, (int) ($res['is_error'] ?? 1));
+    self::assertSame(0, ($res['is_error'] ?? 1));
     /** @phpstan-var array{scheduled?: int, queue_items_after?: int} $values */
     $values = $res['values'] ?? [];
     self::assertIsArray($values);
-    self::assertSame(0, (int) ($values['scheduled'] ?? -1));
-    self::assertSame(0, (int) ($values['queue_items_after'] ?? -1));
+    self::assertSame(0, ($values['scheduled'] ?? -1));
+    self::assertSame(0, ($values['queue_items_after'] ?? -1));
     self::assertSame(0, $this->queueCount(self::QUEUE_NAME));
   }
 

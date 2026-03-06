@@ -2,6 +2,7 @@
 
 declare(strict_types = 1);
 
+use Rector\CodeQuality\Rector\Include_\AbsolutizeRequireAndIncludePathRector;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector;
 use Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector;
@@ -19,10 +20,13 @@ return RectorConfig::configure()
     __DIR__ . '/tests',
   ])
   ->withSkip([
-    ClassPropertyAssignToConstructorPromotionRector::class,
-    AddVoidReturnTypeWhereNoReturnRector::class,
-    RemoveUselessParamTagRector::class,
-    RemoveUselessReturnTagRector::class,
+    ClassPropertyAssignToConstructorPromotionRector::class => NULL,
+    AddVoidReturnTypeWhereNoReturnRector::class => NULL,
+    RemoveUselessParamTagRector::class => NULL,
+    RemoveUselessReturnTagRector::class => NULL,
+    AbsolutizeRequireAndIncludePathRector::class => [
+      __DIR__ . '/assumed_payments.php',
+    ],
   ])
   ->withRules([
     SafeDeclareStrictTypesRector::class,

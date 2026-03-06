@@ -22,6 +22,13 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     return Test::headless()->installMe(__DIR__)->apply();
   }
 
+  protected function tearDownHeadless(): void {
+    \Civi::settings()->set(
+      'assumed_payments_financial_type_ids',
+      NULL
+    );
+  }
+
   private const QUEUE_NAME = 'assumed-payments_schedule';
 
   public function testRun_EnqueuesQueueTasks_NotArrays(): void {
@@ -83,7 +90,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
       'name' => self::QUEUE_NAME,
     ]);
 
-    self::assertGreaterThanOrEqual(1, $q->numberOfItems(), 'Expected queue to contain items before runner');
+    self::assertGreaterThanOrEqual(1, $q->getStatistic('total'), 'Expected queue to contain items before runner');
 
     $runner = new \CRM_Queue_Runner([
       'title' => 'AssumedPayments',
@@ -91,7 +98,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     ]);
     $runner->runAll();
 
-    self::assertSame(0, $q->numberOfItems(), 'Expected queue to be empty after runner processed tasks');
+    self::assertSame(0, $q->getStatistic('total'), 'Expected queue to be empty after runner processed tasks');
   }
 
   public function testSchedule_DoesNotEnqueueRecur_WhenCompletedContributionExistsInRange(): void {
@@ -158,11 +165,13 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     $recurId = $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $cancelledId = (int) civicrm_api3('OptionValue', 'getvalue', [
-      'option_group_id' => 'contribution_status',
-      'name' => 'CANCELLED',
-      'return' => 'value',
-    ]);
+    $cancelledId = (int) \Civi\Api4\OptionValue::get(FALSE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', 'contribution_status')
+      ->addWhere('name', '=', 'CANCELLED')
+      ->execute()
+      ->single()['value'];
+
     self::assertGreaterThan(0, $cancelledId);
 
     $action = AssumedPayments::schedule();
@@ -181,11 +190,13 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
   public function testSchedule_WithMonthlyFrequency_EnqueuesExactlyOneRecur(): void {
     $this->clearQueue(self::QUEUE_NAME);
 
-    $cancelledId = (int) civicrm_api3('OptionValue', 'getvalue', [
-      'option_group_id' => 'contribution_status',
-      'name' => 'CANCELLED',
-      'return' => 'value',
-    ]);
+    $cancelledId = (int) \Civi\Api4\OptionValue::get(FALSE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', 'contribution_status')
+      ->addWhere('name', '=', 'CANCELLED')
+      ->execute()
+      ->single()['value'];
+
     self::assertGreaterThan(0, $cancelledId);
 
     // Scenario should already create the contribution inside range with cancelled status
@@ -324,6 +335,36 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     self::assertIsArray($row);
     self::assertSame(0, (int) ($row['queued'] ?? 0), 'Financial Type mismatch must not trigger scheduling');
     self::assertNotContains($recurId, $row['recur_ids'] ?? []);
+  }
+
+  public function testSchedule_WithControlSignSettings_EnqueuesExactlyOneRecur(): void {
+
+    \Civi::settings()->set(
+      'assumed_payments_contribution_status_ids',
+      '234'
+    );
+
+    $bag = ContributionRecurScenario::pendingRecurWithoutContribution(
+      recurringOverrides: [
+        'start_date' => '2025-01-01',
+        'next_sched_contribution_date' => '2025-01-15 00:00:00',
+        'payment_instrument_id' => 1,
+      ]
+    );
+
+    $recurId = (int) $bag->toArray()['recurringContributionId'];
+    self::assertGreaterThan(0, $recurId);
+
+    $action = AssumedPayments::schedule();
+    $action->setFromDate('2025-01-01');
+    $action->setToDate('2025-01-31');
+    $action->setPaymentInstrumentIds([1]);
+
+    $row = $action->execute()->first();
+
+    self::assertIsArray($row);
+    self::assertSame(1, (int) ($row['queued'] ?? 0), 'Schedule enqueues recurs, not instances');
+    self::assertContains($recurId, $row['recur_ids'] ?? []);
   }
 
   /**

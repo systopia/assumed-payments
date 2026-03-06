@@ -22,12 +22,20 @@ use CRM_AssumedPayments_ExtensionUtil as E;
  */
 final class RunJob extends AbstractAction {
 
-
   protected ?string $fromDate = NULL;
   protected ?string $toDate = NULL;
   protected ?int $batchSize = NULL;
+  /**
+   * @phpstan-var string|list<int>|null $openStatusIds
+   */
   protected null|string|array $openStatusIds = NULL;
+  /**
+   * @phpstan-var string|list<int>|null $paymentInstrumentIds
+   */
   protected null|string|array $paymentInstrumentIds = NULL;
+  /**
+   * @phpstan-var string|list<int>|null $financialTypeIds
+   */
   protected null|string|array $financialTypeIds = NULL;
 
   /**
@@ -37,8 +45,6 @@ final class RunJob extends AbstractAction {
    * action output.
    *
    * @param \Civi\Api4\Generic\Result $result
-   *
-   * @throws \CRM_Core_Exception
    */
   public function _run(Result $result): void {
 
@@ -48,12 +54,29 @@ final class RunJob extends AbstractAction {
 
       $params = $this->buildScheduleParamsFromValues();
 
-      $action->setFromDate($params['fromDate'] ?? NULL);
-      $action->setToDate($params['toDate'] ?? NULL);
-      $action->setBatchSize($params['batchSize'] ?? NULL);
-      $action->setOpenStatusIds($params['openStatusIds'] ?? NULL);
-      $action->setPaymentInstrumentIds($params['paymentInstrumentIds'] ?? NULL);
-      $action->setFinancialTypeIds($params['financialTypeIds'] ?? NULL);
+      /** @var string $fromDate */
+      $fromDate = $params['fromDate'];
+      $action->setFromDate($fromDate ?? NULL);
+
+      /** @var string $toDate */
+      $toDate = $params['toDate'];
+      $action->setToDate($toDate ?? NULL);
+
+      /** @var int $batchSize */
+      $batchSize = $params['batchSize'];
+      $action->setBatchSize($batchSize ?? NULL);
+
+      /** @var list<int> $openStatusIds */
+      $openStatusIds = $params['openStatusIds'];
+      $action->setOpenStatusIds($openStatusIds ?? NULL);
+
+      /** @var list<int> $paymentInstrumentIds */
+      $paymentInstrumentIds = $params['paymentInstrumentIds'];
+      $action->setPaymentInstrumentIds($paymentInstrumentIds ?? NULL);
+
+      /** @var list<int> $financialTypeIds */
+      $financialTypeIds = $params['financialTypeIds'];
+      $action->setFinancialTypeIds($financialTypeIds ?? NULL);
 
       $row = $action->execute()->first();
     }
@@ -122,6 +145,7 @@ final class RunJob extends AbstractAction {
 
     // openStatusIds can be array or JSON string
     $open = $this->openStatusIds;
+    $params['openStatusIds'] = NULL;
     if ($open !== NULL && $open !== '') {
       if (is_array($open)) {
         $params['openStatusIds'] = array_values(
@@ -135,6 +159,46 @@ final class RunJob extends AbstractAction {
         $decoded = json_decode($open, TRUE);
         if (json_last_error() === JSON_ERROR_NONE) {
           $params['openStatusIds'] = $decoded;
+        }
+      }
+    }
+
+    // paymentInstrumentIds can be array or JSON string
+    $instrumentIds = $this->paymentInstrumentIds;
+    $params['paymentInstrumentIds'] = NULL;
+    if ($instrumentIds !== NULL && $instrumentIds !== '') {
+      if (is_array($instrumentIds)) {
+        $params['paymentInstrumentIds'] = array_values(
+          array_filter(
+            array_map(intval(...), $instrumentIds),
+            static fn(int $v): bool => $v > 0
+          )
+        );
+      }
+      else {
+        $decoded = json_decode($instrumentIds, TRUE);
+        if (json_last_error() === JSON_ERROR_NONE) {
+          $params['paymentInstrumentIds'] = $decoded;
+        }
+      }
+    }
+
+    // financialTypeIds can be array or JSON string
+    $financialTypeIds = $this->financialTypeIds;
+    $params['financialTypeIds'] = NULL;
+    if ($financialTypeIds !== NULL && $financialTypeIds !== '') {
+      if (is_array($financialTypeIds)) {
+        $params['financialTypeIds'] = array_values(
+          array_filter(
+            array_map(intval(...), $financialTypeIds),
+            static fn(int $v): bool => $v > 0
+          )
+        );
+      }
+      else {
+        $decoded = json_decode($financialTypeIds, TRUE);
+        if (json_last_error() === JSON_ERROR_NONE) {
+          $params['financialTypeIds'] = $decoded;
         }
       }
     }
@@ -154,14 +218,26 @@ final class RunJob extends AbstractAction {
     $this->batchSize = $value;
   }
 
+  /**
+   * @param array<int, int> $value
+   * @phpstan-param string|list<int>|null $value
+   */
   public function setOpenStatusIds(null|string|array $value): void {
     $this->openStatusIds = $value;
   }
 
+  /**
+   * @param array<int, int> $value
+   * @phpstan-param string|list<int>|null $value
+   */
   public function setPaymentInstrumentIds(null|string|array $value): void {
     $this->paymentInstrumentIds = $value;
   }
 
+  /**
+   * @param array<int, int> $value
+   * @phpstan-param string|list<int>|null $value
+   */
   public function setFinancialTypeIds(null|string|array $value): void {
     $this->financialTypeIds = $value;
   }

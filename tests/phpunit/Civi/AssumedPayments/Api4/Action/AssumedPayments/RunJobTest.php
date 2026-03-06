@@ -25,6 +25,7 @@ final class RunJobTest extends TestCase implements HeadlessInterface, Transactio
   private const QUEUE_NAME = 'assumed-payments_schedule';
 
   public function testRunJob_SchedulesAndRunsQueue_AndReturnsMetrics(): void {
+
     $this->clearQueue(self::QUEUE_NAME);
 
     $bag = ContributionRecurScenario::pendingRecurWithoutContribution(
@@ -36,13 +37,17 @@ final class RunJobTest extends TestCase implements HeadlessInterface, Transactio
     $recurId = (int) $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
+    $recur = \Civi\Api4\ContributionRecur::get(FALSE)
+      ->addWhere('id', '=', $recurId)
+      ->execute()->single();
+
     $action = AssumedPayments::runJob();
     $action->setBatchSize(10);
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
     $action->setOpenStatusIds([1]);
-    $action->setFinancialTypeIds([1]);
-    $action->setPaymentInstrumentIds([1]);
+    $action->setFinancialTypeIds([$recur['financial_type_id']]);
+    $action->setPaymentInstrumentIds($recur['payment_instrument_id']);
 
     $result = $action->execute();
     self::assertCount(1, $result);
@@ -92,6 +97,8 @@ final class RunJobTest extends TestCase implements HeadlessInterface, Transactio
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
     $action->setOpenStatusIds(json_encode([1]));
+    $action->setFinancialTypeIds(json_encode([1]));
+    $action->setPaymentInstrumentIds(json_encode([1]));
 
     $result = $action->execute();
     self::assertCount(1, $result);

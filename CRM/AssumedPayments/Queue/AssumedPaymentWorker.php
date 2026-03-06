@@ -134,11 +134,11 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
 
     try {
       $created = \Civi\Api4\Contribution::create(FALSE)
-        ->addValue('contact_id', (int) $recur['contact_id'])
+        ->addValue('contact_id', $recur['contact_id'])
         ->addValue('contribution_recur_id', $recurId)
-        ->addValue('total_amount', (float) $recur['amount'])
-        ->addValue('currency', (string) $recur['currency'])
-        ->addValue('financial_type_id', (int) $recur['financial_type_id'])
+        ->addValue('total_amount', $recur['amount'])
+        ->addValue('currency', $recur['currency'])
+        ->addValue('financial_type_id', $recur['financial_type_id'])
         ->addValue('contribution_status_id:name', 'Completed')
         ->addValue('source', 'AssumedPayments')
         ->execute()

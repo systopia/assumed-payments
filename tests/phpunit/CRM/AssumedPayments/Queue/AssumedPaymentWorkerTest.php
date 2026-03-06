@@ -152,7 +152,7 @@ final class AssumedPaymentWorkerTest extends TestCase implements HeadlessInterfa
     );
 
     $bag = ContributionRecurScenario::pendingRecurWithCancelledContribution();
-    $recurId = (int) $bag->toArray()['recurringContributionId'];
+    $recurId = $bag->toArray()['recurringContributionId'];
 
     $contributionId = $this->getLatestContributionIdForRecur($recurId);
     self::assertGreaterThan(0, $contributionId);
@@ -181,7 +181,7 @@ final class AssumedPaymentWorkerTest extends TestCase implements HeadlessInterfa
     );
 
     $bag = ContributionRecurScenario::pendingRecurWithCancelledContribution();
-    $recurId = (int) $bag->toArray()['recurringContributionId'];
+    $recurId = $bag->toArray()['recurringContributionId'];
 
     $contributionId = $this->getLatestContributionIdForRecur($recurId);
     self::assertGreaterThan(0, $contributionId);
@@ -217,6 +217,27 @@ final class AssumedPaymentWorkerTest extends TestCase implements HeadlessInterfa
     return $ctx;
   }
 
+  /**
+   * @param iterable<mixed> $rows
+   * @return array<int>
+   */
+  private function extractFinancialTrxnIds(iterable $rows): array {
+    $ids = [];
+    foreach ($rows as $r) {
+      /** @var array<string,mixed> $r */
+      $id = $r['financial_trxn_id'] ?? 0;
+      $ids[] = is_numeric($id) ? (int) $id : 0;
+    }
+    return array_values(
+      array_unique(
+        array_filter(
+          $ids,
+          static fn(int $v): bool => $v !== 0
+        )
+      )
+    );
+  }
+
   private function getLatestContributionIdForRecur(int $recurId): int {
     $row = \Civi\Api4\Contribution::get(FALSE)
       ->addSelect('id')
@@ -238,20 +259,15 @@ final class AssumedPaymentWorkerTest extends TestCase implements HeadlessInterfa
       ->setLimit(0)
       ->execute();
 
-    $ids = [];
-    foreach ($rows as $r) {
-      $ids[] = (int) ($r['financial_trxn_id'] ?? 0);
-    }
-    $ids = array_values(array_unique(array_filter($ids)));
-
+    $ids = $this->extractFinancialTrxnIds($rows);
     return count($ids);
   }
 
   private function countContributionsForRecur(int $recurId): int {
-    $res = civicrm_api3('Contribution', 'getcount', [
-      'contribution_recur_id' => $recurId,
-    ]);
-    return (int) $res;
+    return \Civi\Api4\Contribution::get(FALSE)
+      ->addWhere('contribution_recur_id', '=', $recurId)
+      ->execute()
+      ->count();
   }
 
   private function countFinancialTrxnsForContribution(int $contributionId): int {
@@ -263,21 +279,12 @@ final class AssumedPaymentWorkerTest extends TestCase implements HeadlessInterfa
       ->setLimit(0)
       ->execute();
 
-    $ids = [];
-    foreach ($rows as $r) {
-      $ids[] = (int) ($r['financial_trxn_id'] ?? 0);
-    }
-    $ids = array_values(array_unique(array_filter($ids)));
-
+    $ids = $this->extractFinancialTrxnIds($rows);
     return count($ids);
   }
 
-  /**
-   * Prüft, ob irgendeine FinancialTrxn, die an der Contribution hängt,
-   * das assumed flag trägt. (APIv4)
-   */
   private function assumedFlagExistsForContribution(int $contributionId): bool {
-    $eft = \Civi\Api4\EntityFinancialTrxn::get(FALSE)
+    $rows = \Civi\Api4\EntityFinancialTrxn::get(FALSE)
       ->addSelect('financial_trxn_id')
       ->addWhere('entity_table', '=', 'civicrm_contribution')
       ->addWhere('entity_id', '=', $contributionId)
@@ -285,19 +292,14 @@ final class AssumedPaymentWorkerTest extends TestCase implements HeadlessInterfa
       ->setLimit(0)
       ->execute();
 
-    $trxnIds = [];
-    foreach ($eft as $r) {
-      $trxnIds[] = (int) ($r['financial_trxn_id'] ?? 0);
-    }
-    $trxnIds = array_values(array_unique(array_filter($trxnIds)));
-
-    if ($trxnIds === []) {
+    $ids = $this->extractFinancialTrxnIds($rows);
+    if ($ids === []) {
       return FALSE;
     }
 
     $found = \Civi\Api4\FinancialTrxn::get(FALSE)
       ->addSelect('id')
-      ->addWhere('id', 'IN', $trxnIds)
+      ->addWhere('id', 'IN', $ids)
       ->addWhere('assumed_payments_financialtrxn.is_assumed', '=', TRUE)
       ->setLimit(1)
       ->execute()
