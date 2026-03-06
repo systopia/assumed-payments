@@ -152,6 +152,7 @@ final class AssumedPaymentWorkerTest extends TestCase implements HeadlessInterfa
     );
 
     $bag = ContributionRecurScenario::pendingRecurWithCancelledContribution();
+    /** @var int $recurId */
     $recurId = $bag->toArray()['recurringContributionId'];
 
     $contributionId = $this->getLatestContributionIdForRecur($recurId);
@@ -181,6 +182,7 @@ final class AssumedPaymentWorkerTest extends TestCase implements HeadlessInterfa
     );
 
     $bag = ContributionRecurScenario::pendingRecurWithCancelledContribution();
+    /** @var int $recurId */
     $recurId = $bag->toArray()['recurringContributionId'];
 
     $contributionId = $this->getLatestContributionIdForRecur($recurId);
