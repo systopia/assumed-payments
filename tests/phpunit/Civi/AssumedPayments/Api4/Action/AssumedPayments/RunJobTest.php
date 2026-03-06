@@ -97,12 +97,13 @@ final class RunJobTest extends TestCase implements HeadlessInterface, Transactio
     $action->setFromDate('2025-01-01');
     $action->setToDate('2025-01-31');
 
-    /** @var string $jsonStatus */
+    /** @var non-empty-string $jsonStatus */
     $jsonStatus = json_encode([1]);
-    /** @var string $jsonTypes */
+    /** @var non-empty-string $jsonTypes */
     $jsonTypes = json_encode([1]);
-    /** @var string $jsonInstruments */
+    /** @var non-empty-string $jsonInstruments */
     $jsonInstruments = json_encode([1]);
+
     $action->setOpenStatusIds($jsonStatus);
     $action->setFinancialTypeIds($jsonTypes);
     $action->setPaymentInstrumentIds($jsonInstruments);

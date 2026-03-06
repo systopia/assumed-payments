@@ -13,6 +13,9 @@ class CRM_AssumedPayments_Settings {
    */
   public static function contributionStatusOptions(): array {
     $array = self::contributionStatusOptionsFull();
+    if ($array === NULL) {
+      return [];
+    }
     $labelToId = array_flip($array);
     unset($labelToId['Completed']);
     unset($labelToId['Template']);
@@ -28,6 +31,9 @@ class CRM_AssumedPayments_Settings {
    */
   public static function contributionFinalStatusOptions(): array {
     $array = self::contributionStatusOptionsFull();
+    if ($array === NULL) {
+      return [];
+    }
     $labelToId = array_flip($array);
     unset($labelToId['Template']);
     $idToLabel = array_flip($labelToId);
@@ -39,18 +45,18 @@ class CRM_AssumedPayments_Settings {
   /**
    * Defines the valid full range of contribution status ids for the final state
    *
-   * @return array<int, string>
+   * @return array<int, string>|null
    */
-  public static function contributionStatusOptionsFull(): array {
+  public static function contributionStatusOptionsFull(): array|null {
     return CRM_Core_OptionGroup::values('contribution_status');
   }
 
   /**
    * Defines the valid payment ids for the form
    *
-   * @return array<int, string>
+   * @return array<int, string>|null
    */
-  public static function paymentInstrumentOptions(): array {
+  public static function paymentInstrumentOptions(): array|null {
     return CRM_Core_OptionGroup::values('payment_instrument');
   }
 
