@@ -15,7 +15,7 @@
         "phpstan/phpstan-strict-rules": "^2",
         "phpstan/phpstan-webmozart-assert": "^2",
         "voku/phpstan-rules": "^3.6",
-        "systopia/civicrm-test-fixtures": "0.1.0"
+        "systopia/civicrm-test-fixtures": "dev-main"
     },
     "config": {
         "allow-plugins": {
