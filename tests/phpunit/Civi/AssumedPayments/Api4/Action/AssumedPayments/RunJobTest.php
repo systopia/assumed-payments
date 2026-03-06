@@ -99,7 +99,9 @@ final class RunJobTest extends TestCase implements HeadlessInterface, Transactio
 
     /** @var string $jsonStatus */
     $jsonStatus = json_encode([1]);
+    /** @var string $jsonTypes */
     $jsonTypes = json_encode([1]);
+    /** @var string $jsonInstruments */
     $jsonInstruments = json_encode([1]);
     $action->setOpenStatusIds($jsonStatus);
     $action->setFinancialTypeIds($jsonTypes);
