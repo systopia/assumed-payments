@@ -1,10 +1,17 @@
 <div style="text-align: center;">
 
-[![Generic badge](https://img.shields.io/badge/Maintained-Actively-green.svg)](https://shields.io/)
+<img src="/docs/images/logo-systopia.webp"/>
+
+![Generic badge](https://img.shields.io/badge/Maintained-Actively-green.svg)
 [![Generic badge](https://img.shields.io/badge/Maintainer-SYSTOPIA-blue.svg)](https://github.com/systopia)
 [![Generic badge](https://img.shields.io/badge/License-AGPL%203.0-yellow.svg)](https://github.com/systopia)
+[![Generic badge](https://img.shields.io/badge/PRs-Welcome-green.svg)](https://github.com/systopia)
+
+<span style="display:inline-block; position:relative; top:-9px; padding-right:4px">Built for</span> <img src="/docs/images/logo-civicrm.webp" height="30"/>
 
 </div>
+
+---
 
 # Assumed Payments
 
