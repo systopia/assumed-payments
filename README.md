@@ -1,10 +1,8 @@
 <div align="center">
 <img src="/docs/images/logo-systopia.webp" alt="Systopia Logo"/>
-
-**SYSTOPIA**
 </div>
 
-<div>&nbsp</div>
+<div>&nbsp;</div>
 
 <div align="center">
 
