@@ -1,20 +1,14 @@
 {
-  "repositories": [
-    {
-      "type": "git",
-      "url": "https://github.com/systopia/civicrm-test-fixtures.git"
+    "require": {
+        "symfony/phpunit-bridge": "^7",
+        "systopia/civicrm-test-fixtures": "dev-main"
+    },
+    "scripts": {
+        "post-install-cmd": [
+          "@php vendor/bin/simple-phpunit install --configuration ../../phpunit.xml.dist"
+        ],
+        "post-update-cmd": [
+          "@php vendor/bin/simple-phpunit install --configuration ../../phpunit.xml.dist"
+        ]
     }
-  ],
-  "require": {
-    "symfony/phpunit-bridge": "^7",
-    "systopia/civicrm-test-fixtures": "dev-main"
-  },
-  "scripts": {
-    "post-install-cmd": [
-      "@php vendor/bin/simple-phpunit install --configuration ../../phpunit.xml.dist"
-    ],
-    "post-update-cmd": [
-      "@php vendor/bin/simple-phpunit install --configuration ../../phpunit.xml.dist"
-    ]
-  }
 }

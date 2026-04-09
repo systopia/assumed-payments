@@ -8,13 +8,18 @@ on:
       - rector.php
       - .github/workflows/rector.yml
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.civicrm-version }}
+  cancel-in-progress: true
+
 jobs:
   rector:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: ['8.2', '8.4']
-    name: Rector (PHP ${{ matrix.php }})
+        php-versions: ['8.1', '8.4']
+        prefer: ['prefer-stable', 'prefer-lowest']
+    name: Rector (PHP ${{ matrix.php-versions }}) ${{ matrix.prefer }}
 
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +27,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
+          php-version: ${{ matrix.php-versions }}
           coverage: none
         env:
           fail-fast: true
@@ -39,7 +44,7 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install dependencies
-        run: composer composer-rector -- update --no-progress --prefer-dist
+        run: composer composer-rector -- update --no-progress --prefer-dist --${{ matrix.prefer }}
 
       - name: Run Rector (dry-run)
         run: composer rector:test
