@@ -2,6 +2,11 @@
 
 declare(strict_types = 1);
 
+namespace phpunit\Civi\AssumedPayments\Api4\Action\AssumedPayments;
+
+use Civi\Api4\AssumedPayments;
+use Civi\Test;
+use Civi\Test\CiviEnvBuilder;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;
 use PHPUnit\Framework\TestCase;
@@ -13,31 +18,18 @@ use Systopia\TestFixtures\Fixtures\Scenarios\ContributionRecurScenario;
  */
 final class SchedulePayloadTest extends TestCase implements HeadlessInterface, TransactionalInterface {
 
-  /**
-   * {@inheritDoc}
-   */
   public function setUpHeadless(): CiviEnvBuilder {
-    return Test::headless()
-      ->installMe(__DIR__)
-      ->apply();
+    return Test::headless()->installMe(__DIR__)->apply();
   }
 
-  private ?\CRM_Core_Transaction $tx = NULL;
-
-  protected function setUp(): void {
-    parent::setUp();
-    $this->tx = new \CRM_Core_Transaction();
+  protected function tearDownHeadless(): void {
+    \Civi::settings()->set(
+      'assumed_payments_financial_type_ids',
+      NULL
+    );
   }
 
-  protected function tearDown(): void {
-    if ($this->tx !== NULL) {
-      $this->tx->rollback();
-      $this->tx = NULL;
-    }
-    parent::tearDown();
-  }
-
-  private const QUEUE_NAME = 'assumed_payments';
+  private const QUEUE_NAME = 'assumed-payments_schedule';
 
   public function testRun_EnqueuesQueueTasks_NotArrays(): void {
     $this->clearQueue(self::QUEUE_NAME);
@@ -48,22 +40,23 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
       ]
     );
     $recurId = $bag->toArray()['recurringContributionId'];
-    $this->assertGreaterThan(0, $recurId);
+    self::assertGreaterThan(0, $recurId);
 
-    $result = $this->callSchedule([
-      'dryRun' => TRUE,
-      'limit' => 10,
-      'fromDate' => '2000-01-01',
-      'toDate' => '2100-01-01',
-    ]);
+    $action = AssumedPayments::schedule();
+    $action->setBatchSize(10);
+    $action->setFromDate('2000-01-01');
+    $action->setToDate('2100-01-01');
 
-    $this->assertSame(self::QUEUE_NAME, $result['queue_name'] ?? NULL);
-    $this->assertIsInt($result['queued'] ?? NULL);
-    $this->assertGreaterThanOrEqual(1, (int) $result['queued'], 'Expected schedule to enqueue at least 1 item');
+    $result = $action->execute()->first();
+
+    self::assertIsArray($result, 'Expected schedule to return one result row');
+    self::assertSame(self::QUEUE_NAME, $result['queue_name'] ?? NULL);
+    self::assertIsInt($result['queued'] ?? NULL);
+    self::assertGreaterThanOrEqual(1, $result['queued'], 'Expected schedule to enqueue at least 1 item');
 
     $payload = $this->fetchLatestQueuePayload(self::QUEUE_NAME);
 
-    $this->assertInstanceOf(
+    self::assertInstanceOf(
       \CRM_Queue_Task::class,
       $payload,
       'Queue payload must be CRM_Queue_Task so the runner can execute it'
@@ -79,25 +72,25 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
       ]
     );
     $recurId = $bag->toArray()['recurringContributionId'];
-    $this->assertGreaterThan(0, $recurId);
+    self::assertGreaterThan(0, $recurId);
 
-    $row = civicrm_api4('AssumedPayments', 'schedule', [
-      'dryRun' => TRUE,
-      'limit' => 10,
-      'fromDate' => '2000-01-01',
-      'toDate' => '2100-01-01',
-    ])->first();
+    $action = AssumedPayments::schedule();
+    $action->setBatchSize(10);
+    $action->setFromDate('2000-01-01');
+    $action->setToDate('2100-01-01');
 
-    $this->assertIsArray($row);
-    $this->assertSame(self::QUEUE_NAME, $row['queue_name'] ?? NULL);
-    $this->assertGreaterThanOrEqual(1, (int) ($row['queued'] ?? 0));
+    $row = $action->execute()->first();
+
+    self::assertIsArray($row);
+    self::assertSame(self::QUEUE_NAME, $row['queue_name'] ?? NULL);
+    self::assertGreaterThanOrEqual(1, (int) ($row['queued'] ?? 0));
 
     $q = \CRM_Queue_Service::singleton()->create([
       'type' => 'Sql',
       'name' => self::QUEUE_NAME,
     ]);
 
-    $this->assertGreaterThanOrEqual(1, $q->numberOfItems(), 'Expected queue to contain items before runner');
+    self::assertGreaterThanOrEqual(1, $q->getStatistic('total'), 'Expected queue to contain items before runner');
 
     $runner = new \CRM_Queue_Runner([
       'title' => 'AssumedPayments',
@@ -105,7 +98,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     ]);
     $runner->runAll();
 
-    $this->assertSame(0, $q->numberOfItems(), 'Expected queue to be empty after runner processed tasks');
+    self::assertSame(0, $q->getStatistic('total'), 'Expected queue to be empty after runner processed tasks');
   }
 
   public function testSchedule_DoesNotEnqueueRecur_WhenCompletedContributionExistsInRange(): void {
@@ -120,12 +113,11 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     $recurId = $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $row = civicrm_api4('AssumedPayments', 'schedule', [
-      'dryRun' => TRUE,
-      'fromDate' => '2025-01-01',
-      'toDate' => '2025-01-31',
-      'limit' => 10,
-    ])->first();
+    $action = AssumedPayments::schedule();
+    $action->setBatchSize(10);
+    $action->setFromDate('2025-01-01');
+    $action->setToDate('2025-01-31');
+    $row = $action->execute()->first();
 
     self::assertIsArray($row);
 
@@ -144,13 +136,12 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     $recurId = $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $row = civicrm_api4('AssumedPayments', 'schedule', [
-      'dryRun' => TRUE,
-      'fromDate' => '2025-01-01',
-      'toDate' => '2025-01-31',
-      'limit' => 10,
-    ])->first();
+    $action = AssumedPayments::schedule();
+    $action->setBatchSize(10);
+    $action->setFromDate('2025-01-01');
+    $action->setToDate('2025-01-31');
 
+    $row = $action->execute()->first();
     self::assertIsArray($row);
 
     self::assertSame(0, (int) ($row['queued'] ?? 0), 'Completed contribution must not trigger scheduling');
@@ -174,20 +165,22 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     $recurId = $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $cancelledId = (int) civicrm_api3('OptionValue', 'getvalue', [
-      'option_group_id' => 'contribution_status',
-      'name' => 'CANCELLED',
-      'return' => 'value',
-    ]);
+    $cancelledId = (int) \Civi\Api4\OptionValue::get(FALSE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', 'contribution_status')
+      ->addWhere('name', '=', 'CANCELLED')
+      ->execute()
+      ->single()['value'];
+
     self::assertGreaterThan(0, $cancelledId);
 
-    $row = civicrm_api4('AssumedPayments', 'schedule', [
-      'dryRun' => TRUE,
-      'fromDate' => '2025-01-01',
-      'toDate' => '2025-01-31',
-      'limit' => 10,
-      'openStatusIds' => [$cancelledId],
-    ])->first();
+    $action = AssumedPayments::schedule();
+    $action->setBatchSize(10);
+    $action->setFromDate('2025-01-01');
+    $action->setToDate('2025-01-31');
+    $action->setOpenStatusIds([$cancelledId]);
+
+    $row = $action->execute()->first();
 
     self::assertIsArray($row);
     self::assertGreaterThanOrEqual(1, (int) ($row['queued'] ?? 0));
@@ -197,11 +190,13 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
   public function testSchedule_WithMonthlyFrequency_EnqueuesExactlyOneRecur(): void {
     $this->clearQueue(self::QUEUE_NAME);
 
-    $cancelledId = (int) civicrm_api3('OptionValue', 'getvalue', [
-      'option_group_id' => 'contribution_status',
-      'name' => 'CANCELLED',
-      'return' => 'value',
-    ]);
+    $cancelledId = (int) \Civi\Api4\OptionValue::get(FALSE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', 'contribution_status')
+      ->addWhere('name', '=', 'CANCELLED')
+      ->execute()
+      ->single()['value'];
+
     self::assertGreaterThan(0, $cancelledId);
 
     // Scenario should already create the contribution inside range with cancelled status
@@ -221,13 +216,151 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     $recurId = (int) $bag->toArray()['recurringContributionId'];
     self::assertGreaterThan(0, $recurId);
 
-    $row = civicrm_api4('AssumedPayments', 'schedule', [
-      'dryRun' => TRUE,
-      'fromDate' => '2025-01-01',
-      'toDate' => '2025-01-31',
-      'limit' => 10,
-      'openStatusIds' => [$cancelledId],
-    ])->first();
+    $action = AssumedPayments::schedule();
+    $action->setBatchSize(10);
+    $action->setFromDate('2025-01-01');
+    $action->setToDate('2025-01-31');
+    $action->setOpenStatusIds([$cancelledId]);
+
+    $row = $action->execute()->first();
+
+    self::assertIsArray($row);
+    self::assertSame(1, (int) ($row['queued'] ?? 0), 'Schedule enqueues recurs, not instances');
+    self::assertContains($recurId, $row['recur_ids'] ?? []);
+  }
+
+  public function testSchedule_WithValidPaymentInstrument_EnqueuesExactlyOneRecur(): void {
+    $this->clearQueue(self::QUEUE_NAME);
+
+    $bag = ContributionRecurScenario::pendingRecurWithoutContribution(
+      recurringOverrides: [
+        'start_date' => '2025-01-01',
+        'next_sched_contribution_date' => '2025-01-15 00:00:00',
+        'payment_instrument_id' => 1,
+      ]
+    );
+
+    $recurId = (int) $bag->toArray()['recurringContributionId'];
+    self::assertGreaterThan(0, $recurId);
+
+    $action = AssumedPayments::schedule();
+    $action->setBatchSize(10);
+    $action->setFromDate('2025-01-01');
+    $action->setToDate('2025-01-31');
+    $action->setPaymentInstrumentIds([1]);
+
+    $row = $action->execute()->first();
+
+    self::assertIsArray($row);
+    self::assertSame(1, (int) ($row['queued'] ?? 0), 'Schedule enqueues recurs, not instances');
+    self::assertContains($recurId, $row['recur_ids'] ?? []);
+  }
+
+  public function testSchedule_WithInvalidPaymentInstrument_DoesNotEnqueue(): void {
+    $this->clearQueue(self::QUEUE_NAME);
+
+    $bag = ContributionRecurScenario::pendingRecurWithoutContribution(
+      recurringOverrides: [
+        'start_date' => '2025-01-01',
+        'next_sched_contribution_date' => '2025-01-15 00:00:00',
+        'payment_instrument_id' => 1,
+      ]
+    );
+
+    $recurId = (int) $bag->toArray()['recurringContributionId'];
+    self::assertGreaterThan(0, $recurId);
+
+    $action = AssumedPayments::schedule();
+    $action->setBatchSize(10);
+    $action->setFromDate('2025-01-01');
+    $action->setToDate('2025-01-31');
+    $action->setPaymentInstrumentIds([2]);
+
+    $row = $action->execute()->first();
+
+    self::assertIsArray($row);
+    self::assertSame(0, (int) ($row['queued'] ?? 0), 'Payment Instrument mismatch must not trigger scheduling');
+    self::assertNotContains($recurId, $row['recur_ids'] ?? []);
+  }
+
+  public function testSchedule_WithValidFinancialType_EnqueuesExactlyOneRecur(): void {
+    $this->clearQueue(self::QUEUE_NAME);
+
+    $bag = ContributionRecurScenario::pendingRecurWithoutContribution(
+      recurringOverrides: [
+        'start_date' => '2025-01-01',
+        'next_sched_contribution_date' => '2025-01-15 00:00:00',
+        'financial_type_id:name' => 'Donation',
+      ]
+    );
+
+    $recurId = (int) $bag->toArray()['recurringContributionId'];
+    self::assertGreaterThan(0, $recurId);
+
+    $action = AssumedPayments::schedule();
+    $action->setBatchSize(10);
+    $action->setFromDate('2025-01-01');
+    $action->setToDate('2025-01-31');
+    $action->setFinancialTypeIds([1]);
+
+    $row = $action->execute()->first();
+
+    self::assertIsArray($row);
+    self::assertSame(1, (int) ($row['queued'] ?? 0), 'Schedule enqueues recurs, not instances');
+    self::assertContains($recurId, $row['recur_ids'] ?? []);
+  }
+
+  public function testSchedule_WithInvalidFinancialTypeId_DoesNotEnqueue(): void {
+    $this->clearQueue(self::QUEUE_NAME);
+
+    $bag = ContributionRecurScenario::pendingRecurWithoutContribution(
+      recurringOverrides: [
+        'start_date' => '2025-01-01',
+        'next_sched_contribution_date' => '2025-01-15 00:00:00',
+        'financial_type_id:name' => 'Donation',
+      ]
+    );
+    $recurId = (int) $bag->toArray()['recurringContributionId'];
+    self::assertGreaterThan(0, $recurId);
+
+    // allow only the other FT -> should filter it out
+    $action = AssumedPayments::schedule();
+    $action->setBatchSize(10);
+    $action->setFromDate('2025-01-01');
+    $action->setToDate('2025-01-31');
+    $action->setFinancialTypeIds([2]);
+
+    $row = $action->execute()->first();
+
+    self::assertIsArray($row);
+    self::assertSame(0, (int) ($row['queued'] ?? 0), 'Financial Type mismatch must not trigger scheduling');
+    self::assertNotContains($recurId, $row['recur_ids'] ?? []);
+  }
+
+  public function testSchedule_WithControlSignSettings_EnqueuesExactlyOneRecur(): void {
+
+    \Civi::settings()->set(
+      'assumed_payments_contribution_status_ids',
+      '234'
+    );
+
+    $bag = ContributionRecurScenario::pendingRecurWithoutContribution(
+      recurringOverrides: [
+        'start_date' => '2025-01-01',
+        'next_sched_contribution_date' => '2025-01-15 00:00:00',
+        'payment_instrument_id' => 1,
+      ]
+    );
+
+    $recurId = (int) $bag->toArray()['recurringContributionId'];
+    self::assertGreaterThan(0, $recurId);
+
+    $action = AssumedPayments::schedule();
+    $action->setFromDate('2025-01-01');
+    $action->setToDate('2025-01-31');
+    $action->setPaymentInstrumentIds([1]);
+
+    $row = $action->execute()->first();
 
     self::assertIsArray($row);
     self::assertSame(1, (int) ($row['queued'] ?? 0), 'Schedule enqueues recurs, not instances');
@@ -251,31 +384,20 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
   }
 
   /**
-   * @param array<string, mixed> $params
-   * @return array<string, mixed>
-   * @throws CRM_Core_Exception
-   * @throws \Civi\API\Exception\NotImplementedException
-   */
-  private function callSchedule(array $params): array {
-    $row = civicrm_api4('AssumedPayments', 'schedule', $params)->first();
-    $this->assertIsArray($row, 'Expected schedule to return one result row');
-    return $row;
-  }
-
-  /**
    * @return mixed
    * @throws \Civi\Core\Exception\DBQueryException
    */
   private function fetchLatestQueuePayload(string $queueName) {
+    /** @phpstan-var \CRM_Core_DAO $dao */
     $dao = \CRM_Core_DAO::executeQuery(
       'SELECT data FROM civicrm_queue_item WHERE queue_name = %1 ORDER BY id DESC LIMIT 1',
       [1 => [$queueName, 'String']]
     );
 
-    $this->assertTrue($dao->fetch(), 'Expected at least one queue item');
+    self::assertTrue($dao->fetch(), 'Expected at least one queue item');
 
     $payload = unserialize((string) $dao->data);
-    $this->assertNotFalse($payload, 'Expected queue item payload to be unserializable');
+    self::assertNotFalse($payload, 'Expected queue item payload to be unserializable');
 
     return $payload;
   }

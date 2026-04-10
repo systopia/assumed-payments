@@ -60,16 +60,18 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
           );
           return FALSE;
         }
-        self::markContributionAsCompleted($contributionId);
       }
       else {
         // no contribution exists -> create it
         $contributionId = self::createContributionInstanceFromRecur($recurId);
       }
-
       // If we reach here, we must create payment + flag
       $amount = self::getContributionAmount($contributionId);
       $trxnId = self::createAssumedPayment($contributionId, $amount);
+
+      //and mark the contribution with the intended state
+      self::markContributionAsCompleted($contributionId);
+
       self::flagAssumedOnTrxn($trxnId);
 
       $tx->commit();
@@ -132,11 +134,11 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
 
     try {
       $created = \Civi\Api4\Contribution::create(FALSE)
-        ->addValue('contact_id', (int) $recur['contact_id'])
+        ->addValue('contact_id', $recur['contact_id'])
         ->addValue('contribution_recur_id', $recurId)
-        ->addValue('total_amount', (float) $recur['amount'])
-        ->addValue('currency', (string) $recur['currency'])
-        ->addValue('financial_type_id', (int) $recur['financial_type_id'])
+        ->addValue('total_amount', $recur['amount'])
+        ->addValue('currency', $recur['currency'])
+        ->addValue('financial_type_id', $recur['financial_type_id'])
         ->addValue('contribution_status_id:name', 'Completed')
         ->addValue('source', 'AssumedPayments')
         ->execute()
@@ -323,11 +325,18 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
    * @throws \CRM_Core_Exception
    */
   private static function markContributionAsCompleted(int $contributionId): void {
+
     try {
-      \Civi\Api4\Contribution::update(FALSE)
-        ->addValue('contribution_status_id:name', 'Completed')
-        ->addWhere('id', '=', $contributionId)
-        ->execute();
+      $finalContributionState = Civi::settings()->get('assumed_payments_final_contribution_state');
+
+      //Only modify the contribution if there is an actual chosen "non default" value
+      if ($finalContributionState !== NULL && $finalContributionState !== 0) {
+        \Civi\Api4\Contribution::update(FALSE)
+          ->addValue('contribution_status_id', $finalContributionState)
+          ->addWhere('id', '=', $contributionId)
+          ->execute();
+      }
+      return;
     }
     //@codeCoverageIgnoreStart
     catch (CRM_Core_Exception $e) {

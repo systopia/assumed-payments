@@ -5,7 +5,7 @@
     "license": "AGPL-3.0-or-later",
     "authors": [
         {
-            "name": "SYSTOPIA GmbH",
+            "name": "SYSTOPIA",
             "email": "info@systopia.de",
             "homepage": "https://www.systopia.de"
         }
@@ -23,8 +23,13 @@
         "civicrm/civicrm-core": ">=6.8",
         "civicrm/civicrm-packages": ">=6.8"
     },
+    "require-dev": {
+        "systopia/civicrm-test-fixtures": "dev-main"
+    },
     "autoload": {
-        "classmap": ["ComposerHelper.php"]
+        "classmap": [
+            "ComposerHelper.php"
+        ]
     },
     "scripts": {
         "pre-update-cmd": [
@@ -36,21 +41,21 @@
         "composer-phpstan": [
             "@composer --working-dir=tools/phpstan"
         ],
-    "composer-phpunit": [
-      "@composer --working-dir=tools/phpunit"
-    ],
-    "composer-rector": [
-      "@composer --working-dir=tools/rector"
-    ],
-    "composer-cs-fixer": [
-      "@composer --working-dir=tools/php-cs-fixer"
-    ],
-    "composer-tools": [
-      "@composer-cs-fixer",
-      "@composer-rector",
-      "@composer-phpcs",
-      "@composer-phpstan",
-      "@composer-phpunit"
+        "composer-phpunit": [
+            "@composer --working-dir=tools/phpunit"
+        ],
+        "composer-rector": [
+            "@composer --working-dir=tools/rector"
+        ],
+        "composer-cs-fixer": [
+            "@composer --working-dir=tools/php-cs-fixer"
+        ],
+        "composer-tools": [
+            "@composer-cs-fixer",
+            "@composer-rector",
+            "@composer-phpcs",
+            "@composer-phpstan",
+            "@composer-phpunit"
         ],
         "phpcs": [
             "@php tools/phpcs/vendor/bin/phpcs"
@@ -61,35 +66,35 @@
         "phpstan": [
             "@php tools/phpstan/vendor/bin/phpstan -v"
         ],
-    "phpunit": [
-      "@php tools/phpunit/vendor/bin/simple-phpunit --coverage-text"
-    ],
-    "phpunit:html": [
-      "@php tools/phpunit/vendor/bin/simple-phpunit --coverage-html /var/www/html/coverage"
-    ],
-    "rector": [
-      "@php tools/rector/vendor/bin/rector process"
-    ],
-    "rector:test": [
-      "@php tools/rector/vendor/bin/rector process --dry-run"
-    ],
-    "cs-fixer": [
-      "@php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --config=php-cs-fixer.php"
-    ],
-    "cs-fixer:test": [
-      "@php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --dry-run --diff --config=php-cs-fixer.php"
-    ],
-    "fix": [
-      "@rector",
-      "@cs-fixer",
-      "@phpcbf"
-    ],
-    "test": [
-      "@rector:test",
-      "@cs-fixer:test",
-      "@phpcs",
-      "@phpstan",
-      "@phpunit"
+        "phpunit": [
+            "@php tools/phpunit/vendor/bin/simple-phpunit --coverage-text"
+        ],
+        "phpunit:html": [
+            "@php tools/phpunit/vendor/bin/simple-phpunit --coverage-html /var/www/html/coverage"
+        ],
+        "rector": [
+            "@php tools/rector/vendor/bin/rector process"
+        ],
+        "rector:test": [
+            "@php tools/rector/vendor/bin/rector process --dry-run"
+        ],
+        "cs-fixer": [
+            "@php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --config=php-cs-fixer.php"
+        ],
+        "cs-fixer:test": [
+            "@php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --dry-run --diff --config=php-cs-fixer.php"
+        ],
+        "fix": [
+            "@rector",
+            "@cs-fixer",
+            "@phpcbf"
+        ],
+        "test": [
+            "@rector:test",
+            "@cs-fixer:test",
+            "@phpcs",
+            "@phpstan",
+            "@phpunit"
         ]
     },
     "conflict": {
