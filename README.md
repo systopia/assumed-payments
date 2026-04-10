@@ -1,5 +1,7 @@
 <div align="center">
-<img src="/docs/images/logo-systopia.webp" alt="Systopia Logo"/>
+
+![Systopia Logo](/docs/images/logo-systopia.webp)
+
 </div>
 
 <div>&nbsp;</div>
@@ -43,34 +45,34 @@ Designed for organizations running CiviCRM with recurring contributions that req
 
 ## Quickstart
 
-Enable the extension in CiviCRM.
+Install and enable the extension in CiviCRM.
 
+Or install by using `composer require systopia/civicrm-test-fixtures`.
 
 ## Documentation
 
-The settings allow you to define:
-
-- Installation & Requirements → see /docs/installation.md
-- Configuration → see /docs/configuration.md
-- Architecture → see /docs/architecture.md
-- API Reference → see /docs/api.md
-- Development Guide → see /docs/development.md
-
-
+For further information please consult the extensive [documentation](/docs/index.md).
 ## Status
 
-<span style="color: #28a745; font-weight: 600;">**Actively maintained.**</span> Production-ready for structured recurring contribution reconciliation.
+[![Generic badge](https://img.shields.io/badge/Status-Actively%20Maintained-green.svg)](https://shields.io/)
 
-## Notes
+Production-ready for structured recurring contribution reconciliation.
 
-- Assumed payments are flagged via a custom field on `FinancialTrxn`.
-- The extension is designed to be idempotent and avoids duplicate assumed payments.
+## Support / Issues / Contributions
 
-## Contributing
+### We need your Support
+This CiviCRM extension is Free and Open Source Software and we are glad if you find it useful.
 
-Contributions are happily welcome. see more 
+However, a significant part of its development and ongoing maintenance happens outside funded projects. If this extension creates value for your work, consider supporting its continued development.
 
-## Support / Issues / Security
+If you’d like to contribute financially, feel free to reach out via info@systopia.de to arrange a simple and suitable way.
 
-- We need your support. -> Read more here.
-- Please report issues or security concerns -> here.
+Your support helps keep this extension maintained, improved, and available to everyone.
+
+### Issues / Security
+
+Please report issues and security concerns [here](../../issues).
+
+### Contributions
+
+Contributions are welcome. Learn how to contribute [here](docs/contributions.md).
