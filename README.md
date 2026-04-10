@@ -8,13 +8,13 @@
 
 <div align="center">
 
-![Generic badge](https://img.shields.io/badge/Maintained-Actively-green.svg)
-[![Generic badge](https://img.shields.io/badge/Maintainer-SYSTOPIA-blue.svg)](https://github.com/systopia)
-[![Generic badge](https://img.shields.io/badge/License-AGPL%203.0-yellow.svg)](https://opensource.org/licenses/AGPL-3.0)
-[![Generic badge](https://img.shields.io/badge/PRs-Welcome-green.svg)](/issues)
+![Maintained-Status](https://img.shields.io/badge/Maintained-Actively-green.svg)
+[![Maintainer: Systopia](https://img.shields.io/badge/Maintainer-SYSTOPIA-blue.svg)](https://github.com/systopia)
+[![License: AGPL 3.0](https://img.shields.io/badge/License-AGPL%203.0-yellow.svg)](https://opensource.org/licenses/AGPL-3.0)
+[![PRs: Welcome](https://img.shields.io/badge/PRs-Welcome-green.svg)](../../issues)
 
 Built for  
-<img src="/docs/images/logo-civicrm.webp"/>
+![Systopia Logo](/docs/images/logo-civicrm.webp)
 
 </div>
 
@@ -51,10 +51,10 @@ Or install by using `composer require systopia/civicrm-test-fixtures`.
 
 ## Documentation
 
-For further information please consult the extensive [documentation](/docs/index.md).
+For further information please consult the [documentation](/docs/index.md).
 ## Status
 
-[![Generic badge](https://img.shields.io/badge/Status-Actively%20Maintained-green.svg)](https://shields.io/)
+[![Actively Maintained](https://img.shields.io/badge/Status-Actively%20Maintained-green.svg)](https://shields.io/)
 
 Production-ready for structured recurring contribution reconciliation.
 
@@ -75,4 +75,4 @@ Please report issues and security concerns [here](../../issues).
 
 ### Contributions
 
-Contributions are welcome. Learn how to contribute [here](docs/contributions.md).
+Contributions are welcome. Learn how to contribute [here](docs/CONTRIBUTING.md).

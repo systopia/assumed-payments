@@ -26,7 +26,7 @@ return [
             [
               'queue_name',
               '=',
-              'assumed-payments_schedule',
+              'assumed_payments_schedule',
             ],
           ],
           'groupBy' => [],

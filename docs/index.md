@@ -1,199 +1,163 @@
 # Assumed Payments
 
-CiviCRM extension to **create “assumed payments”** for recurring contributions in cases where a contribution instance is missing or remains “open” within a configured date window.
+CiviCRM extension to create **assumed payments** for recurring contributions that appear unpaid within a configured date
+window.
 
 The extension provides:
 
-- A **settings form** to configure date range, “open” contribution statuses, batch size, and default dry-run behavior.
+- A **settings form** to configure date range, "unfinished" contribution statuses, batch size, and default dry-run behavior.
 - An **APIv4 action** `AssumedPayments.schedule` which identifies relevant recurring contributions and enqueues work items.
 - A **Queue worker** which ensures a pending contribution instance exists and then creates a payment + flags the resulting transaction as “assumed”.
 - An **APIv3 Scheduled Job** `Job.assumed_payments_schedule` which delegates to the APIv4 scheduler and then runs the queue.
+- Built-in **SearchKit saved searches** for reviewing assumed payments and inspecting queue items.
 
 ---
 
-## What “assumed payments” means here
+## Overview
 
-For each selected `civicrm_contribution_recur` record, the worker:
+Recurring contributions can become inconsistent over time. Expected payments may be missing or remain in an "unfinished" state. This extension exists to restore a coherent financial record by programmatically completing those gaps in a controlled and traceable way.
 
-1. Ensures there is a **Pending** contribution instance for the recur (reuses an existing Pending instance if present; otherwise creates one from the recur).
-2. Ensures we do **not** already have an assumed payment for that contribution (checked via a custom field on `FinancialTrxn`).
-3. Creates a **Payment** (`Payment.create`) for the contribution amount.
-4. Sets a custom boolean flag (`is_assumed`) on the latest related `FinancialTrxn`.
+The extension:
+- identifies relevant `ContributionRecur` records
+- enqueues them for processing
+- creates a payment for the related contribution
+- flags the resulting `FinancialTrxn` with `is_assumed`
 
-This produces a payment trail that can be filtered/recognized as “assumed”.
+If configured, the processed contribution is also moved into a final contribution status.
 
 ---
 
 ## Configuration
 
-### Settings UI
+Different organisations have different definitions of what constitutes a "missing" or "unpaid" contribution. The configuration allows adapting the extension’s behavior to those definitions without changing code.
 
-The settings form is implemented at:
+The scheduler uses the following settings:
 
-- `CRM/AssumedPayments/Form/AssumedPayments.php`
-- template: `templates/CRM/AssumedPayments/Form/AssumedPayments.tpl`
-
-Settings currently in use by the scheduler:
-
-- `assumed_payments_date_from` / `assumed_payments_date_to`
-  Absolute date window (stored normalized as `YYYY-MM-DD`).
+- `assumed_payments_from_date`
+- `assumed_payments_to_date`
 - `assumed_payments_contribution_status_ids`
-  Contribution statuses considered “open”.
+- `assumed_payments_payment_instrument_ids`
+- `assumed_payments_financial_type_ids`
 - `assumed_payments_batch_size`
-  Maximum number of recurs queued per run.
-- `assumed_payments_dry_run_default`
-  Default dry-run state if not overridden via API/job params.
-
-> Note: there is also a setting definition `assumed_payments_relative_date_filter` in `settings/assumed_payments.setting.php`, but the current scheduler implementation uses the absolute `*_date_from/to` settings.
+- `assumed_payments_final_contribution_state`
 
 ---
 
-## Scheduled Job (APIv3)
-
-File: `api/v3/Job/AssumedpaymentsSchedule.php`
-
-API name/action:
-
-- Entity: `Job`
-- Action: `assumed_payments_schedule`
-
-Behavior:
-
-- Builds APIv4 params from job params (if provided)
-- Calls `AssumedPayments.schedule` (APIv4) to **fill the queue**
-- Runs the queue `assumed_payments` via `CRM_Queue_Runner::runAll()`
-
-### Supported job parameters (optional)
-
-- `fromDate` (string `YYYY-MM-DD` or datetime)
-- `toDate` (string `YYYY-MM-DD` or datetime)
-- `limit` (int)
-- `dryRun` (bool|int)
-- `openStatusIds` (array<int> OR JSON string)
-
-The job returns a summary including queued items and processed count.
-
----
-
-## APIv4
-
-Entity: `Civi\Api4\AssumedPayments` (`Civi/Api4/AssumedPayments.php`)
-
-### `AssumedPayments.getFields`
-
-Provides metadata for:
-
-- `fromDate`
-- `toDate`
-- `limit`
-- `dryRun`
-- `openStatusIds`
-
-Implementation: `Civi/AssumedPayments/Api4/Action/AssumedPayments/GetFields.php`
+## API
 
 ### `AssumedPayments.schedule`
 
-Implementation: `Civi/AssumedPayments/Api4/Action/AssumedPayments/Schedule.php`
+This action focuses purely on identifying which recurring contributions require intervention.
 
-Inputs (all optional):
+**Parameters (optional):**
 
-- `fromDate`, `toDate` override configured settings
-- `limit` overrides batch size
-- `dryRun` overrides default dry-run setting
-- `openStatusIds` overrides configured “open” statuses
+- `fromDate`
+- `toDate`
+- `batchSize`
+- `openStatusIds`
+- `paymentInstrumentIds`
+- `financialTypeIds`
 
-Output (one row):
+**Returns:**
 
-- `dryRun`
-- `from_date`, `to_date`
+- `from_date`
+- `to_date`
 - `recur_ids`
 - `count`
 - `queue_name`
 - `queued`
 
-#### Scheduling heuristic (current)
+A recur is considered relevant if:
 
-A recur is considered relevant when:
-
-- `recur.next_sched_contribution_date` lies within `[from, to]`
-- and `recur.start_date/end_date` do not exclude the window
+- `next_sched_contribution_date` is within the configured window
+- `start_date` / `end_date` do not exclude that window
+- it matches the optional payment instrument / financial type filters
 - and within the window either:
-  - **no contribution instance exists**, OR
-  - a contribution instance exists with an **“open”** status (configurable)
-
-The scheduler enqueues one queue item per recur id.
+  - no contribution exists, or
+  - at least one contribution exists in a configured “unpaid” status
 
 ---
 
-## Queue Worker
+### `AssumedPayments.runJob`
 
-File: `CRM/AssumedPayments/Queue/AssumedPaymentWorker.php`
+This action represents the full automation path, combining detection and execution in a single step.
 
-Queue name: `assumed_payments`
+job flow:
 
-For each item (`recur_id`, `dry_run`):
+1. schedule items
+2. run the queue
+3. return a summary
 
-- Validates recur exists
-- Finds an existing **Pending** contribution instance or creates one from the recur
-- Checks if an assumed payment was already created (by scanning related transactions for `is_assumed = 1`)
-- Creates payment and flags latest `FinancialTrxn`
+**Parameters (optional):**
 
-> Current implementation passes `dry_run` into the queue item payload; the worker currently does not branch on it yet. If you expect dry-run to suppress writes, implement it in `run()` (skip Payment.create + CustomValue.create and only log/return TRUE).
-
----
-
-## Data Model / Managed Entities
-
-The extension creates a custom field on `FinancialTrxn` to mark assumed payments.
-
-Managed entity file:
-
-- `managed/CustomGroupAssumedPaymentsFinancialTrxn.mgd.php`
-
-Creates:
-
-- CustomGroup `assumed_payments_financialtrxn` extending `FinancialTrxn`
-  - table: `civicrm_value_assumed_payments`
-- CustomField `is_assumed` (Boolean) on that group
-
-There is also a managed option value to ensure the `cg_extend_objects` option includes `FinancialTrxn`.
+- `fromDate`
+- `toDate`
+- `batchSize`
+- `openStatusIds`
+- `paymentInstrumentIds`
+- `financialTypeIds`
 
 ---
 
-## Installation / Enablement
+## Scheduled Job
 
-1. Install the extension in CiviCRM as usual.
-2. Enable the extension.
-3. Configure settings in **Assumed Payments Settings** (admin form).
-4. Enable the Scheduled Job **Assumed Payments – Schedule** (created inactive by default).
+Recurring data inconsistencies typically need continuous correction rather than one-time fixes. The scheduled job allows running this process regularly without manual intervention.
 
-Managed scheduled job definition:
+`Job.assumed_payments_schedule` is a thin APIv3 wrapper around `AssumedPayments.runJob`.
 
-- `managed/AssumedPayments.job.mgd.php`
+**Supported parameters:**
 
----
+- `fromDate`
+- `toDate`
+- `batchSize`
+- `openStatusIds`
+- `paymentInstrumentIds`
+- `financialTypeIds`
 
-## Development notes
-
-- Queue uses SQL backend (`CRM_Queue_Service` with `type=Sql`).
-- Job always runs the queue even if the scheduler returns `queued=0` to avoid leftovers from prior runs.
-- `openStatusIds` in the Scheduled Job supports both array and JSON string for compatibility with Scheduled Job parameter storage.
+**Note:** List parameters support both arrays and JSON strings.
 
 ---
 
-## Troubleshooting
+## Worker
 
-- If nothing is queued:
-  - Verify `assumed_payments_date_from/to` are set and form a valid window.
-  - Verify `assumed_payments_contribution_status_ids` matches your intended “open” statuses.
-  - Confirm recurs have `next_sched_contribution_date` within the configured window.
+All actual data modifications are isolated in the queue worker. This ensures that processing is scalable, repeatable, and safe to retry without unintended side effects.
 
-- If payments are created repeatedly:
-  - Confirm the custom field exists and is being set on `FinancialTrxn` (`is_assumed = 1`).
-  - Confirm `EntityFinancialTrxn` links exist for the contribution and the latest transaction is being flagged.
+For each queued recur:
+
+1. load latest contribution instance
+2. skip if an assumed payment already exists
+3. create contribution if none exists
+4. create payment
+5. flag `FinancialTrxn.is_assumed`
+6. optionally update contribution status
+
+**Note:** The worker uses the **latest contribution instance**, not a specific pending one.
 
 ---
 
-## License
+## Data Model
 
-(TODO)
+Automatically created payments need to remain distinguishable from real transactions. The additional data model ensures that all generated records can be clearly identified and audited.
+
+The extension adds a custom field on `FinancialTrxn`:
+
+- Custom Group: `assumed_payments_financialtrxn`
+- Custom Field: `is_assumed`
+
+---
+
+## SearchKit
+
+Visibility is critical when automating financial data changes. The provided searches make it easy to review results and monitor ongoing processing.
+
+The extension ships with two SearchKit saved searches:
+
+### Contributions with assumed payments
+
+Shows contributions linked to a `FinancialTrxn` with `assumed_payments_financialtrxn.is_assumed = TRUE`. This can be
+used to review contributions that were processed by the extension.
+
+### Queue items for unpaid recurs
+
+Shows queue items belonging to the assumed payments queue. This can be used to inspect remaining or scheduled queue
+items.
