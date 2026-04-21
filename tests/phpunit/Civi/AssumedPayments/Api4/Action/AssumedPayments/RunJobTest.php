@@ -22,7 +22,7 @@ final class RunJobTest extends TestCase implements HeadlessInterface, Transactio
     return Test::headless()->installMe(__DIR__)->apply();
   }
 
-  private const QUEUE_NAME = 'assumed-payments_schedule';
+  private const QUEUE_NAME = 'assumed_payments_schedule';
 
   public function testRunJob_SchedulesAndRunsQueue_AndReturnsMetrics(): void {
 
