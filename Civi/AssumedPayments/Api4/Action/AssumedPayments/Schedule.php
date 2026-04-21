@@ -95,7 +95,7 @@ class Schedule extends AbstractAction {
     // Create queue
     $queue = \CRM_Queue_Service::singleton()->create([
       'type' => 'Sql',
-      'name' => E::LONG_NAME . '_schedule',
+      'name' => E::SHORT_NAME . '_schedule',
       'reset' => TRUE,
     ]);
 
@@ -107,7 +107,7 @@ class Schedule extends AbstractAction {
       'to_date' => $to,
       'recur_ids' => array_values($ids),
       'count' => count($ids),
-      'queue_name' => E::LONG_NAME . '_schedule',
+      'queue_name' => E::SHORT_NAME . '_schedule',
       'queued' => $queued,
     ];
   }

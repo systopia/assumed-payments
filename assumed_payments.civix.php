@@ -8,7 +8,7 @@
  */
 class CRM_AssumedPayments_ExtensionUtil {
   const SHORT_NAME = 'assumed_payments';
-  const LONG_NAME = 'assumed_payments';
+  const LONG_NAME = 'assumed-payments';
   const CLASS_PREFIX = 'CRM_AssumedPayments';
 
   /**

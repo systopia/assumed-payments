@@ -90,7 +90,7 @@ final class RunJob extends AbstractAction {
 
     $q = CRM_Queue_Service::singleton()->create([
       'type' => 'Sql',
-      'name' => E::LONG_NAME . '_schedule',
+      'name' => E::SHORT_NAME . '_schedule',
     ]);
 
     $before = (int) $q->getStatistic('total');
@@ -107,7 +107,7 @@ final class RunJob extends AbstractAction {
 
     $result[] = [
       'message' => 'AssumedPayments job executed.',
-      'queue_name' => E::LONG_NAME . '_schedule',
+      'queue_name' => E::SHORT_NAME . '_schedule',
       'scheduled' => $queued,
       'queue_items_before' => $before,
       'processed' => $processed,
