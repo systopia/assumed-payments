@@ -19,7 +19,7 @@ final class AssumedPaymentsScheduleTest extends TestCase implements HeadlessInte
     return Test::headless()->installMe(__DIR__)->apply();
   }
 
-  private const QUEUE_NAME = 'assumed-payments_schedule';
+  private const QUEUE_NAME = 'assumed_payments_schedule';
 
   public function testJob_WhenNothingDue_SchedulesZero_AndQueueEmpty(): void {
     // Fixture: recur not due in window

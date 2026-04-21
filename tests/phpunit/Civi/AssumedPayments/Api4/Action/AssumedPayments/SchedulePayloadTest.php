@@ -29,7 +29,7 @@ final class SchedulePayloadTest extends TestCase implements HeadlessInterface, T
     );
   }
 
-  private const QUEUE_NAME = 'assumed-payments_schedule';
+  private const QUEUE_NAME = 'assumed_payments_schedule';
 
   public function testRun_EnqueuesQueueTasks_NotArrays(): void {
     $this->clearQueue(self::QUEUE_NAME);
