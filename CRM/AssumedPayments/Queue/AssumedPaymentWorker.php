@@ -327,12 +327,16 @@ class CRM_AssumedPayments_Queue_AssumedPaymentWorker {
   private static function markContributionAsCompleted(int $contributionId): void {
 
     try {
+      /** @var int $finalContributionState */
       $finalContributionState = Civi::settings()->get('assumed_payments_final_contribution_state');
 
+      //NULL equals default value of 0
+      $usedState = (int) $finalContributionState;
+
       //Only modify the contribution if there is an actual chosen "non default" value
-      if ($finalContributionState !== NULL && $finalContributionState !== 0) {
+      if ($usedState !== 0) {
         \Civi\Api4\Contribution::update(FALSE)
-          ->addValue('contribution_status_id', $finalContributionState)
+          ->addValue('contribution_status_id', $usedState)
           ->addWhere('id', '=', $contributionId)
           ->execute();
       }
