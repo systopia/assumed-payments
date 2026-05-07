@@ -47,7 +47,7 @@ Designed for organizations running CiviCRM with recurring contributions that req
 
 Install and enable the extension in CiviCRM.
 
-Or install by using `composer require systopia/civicrm-test-fixtures`.
+Or install by using `composer require systopia/assumed-payments`.
 
 ## Documentation
 
